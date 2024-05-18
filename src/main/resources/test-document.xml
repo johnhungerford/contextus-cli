@@ -1,0 +1,44 @@
+<document>
+    <title>Final Test</title>
+
+    <author>Test Author</author>
+
+    <category>The Gilded Age</category>
+
+    <schema paragraphBreak="line-break">
+        <level>Book</level>
+        <level>Chapter</level>
+        <level>Paragraph</level>
+    </schema>
+    
+    <version>
+        <title>Original version</title>
+        <source>http://johnhungerford.github.io</source>
+    </version>
+    
+    <body>
+        <section>
+            <title>Book 1</title>
+            <section>
+                text of book 1, chapter 1, paragraph 1
+                text of book 1, chapter 1, paragraph 2
+            </section>
+            <section>
+                text of book 1, chapter 2, paragraph 1
+                text of book 1, chapter 2, paragraph 2
+            </section>
+        </section>
+        <section>
+            <title>Book 2</title>
+            <section>
+                text of book 2, chapter 1, paragraph 1
+                text of book 2, chapter 1, paragraph 2
+            </section>
+            <section>
+                text of book 2, chapter 2, paragraph 1
+                text of book 2, chapter 2, paragraph 2
+            </section>
+        </section>
+    </body>
+
+</document>

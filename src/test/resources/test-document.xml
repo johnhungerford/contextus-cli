@@ -1,0 +1,46 @@
+<document>
+    <title>Test Title</title>
+    <alternateTitle>Test Alternate Title 1</alternateTitle>
+    <alternateTitle>Test Alternate Title 2</alternateTitle>
+
+    <author>Test Author</author>
+
+    <category>Test Category 1, Test Category 2</category>
+
+    <schema paragraphBreak="line-break">
+        <level>book</level>
+        <level>chapter</level>
+        <level>paragraph</level>
+    </schema>
+    
+    <version>
+        <title>Original version</title>
+        <source>http://johnhungerford.github.io</source>
+    </version>
+    
+    <body>
+        <section level="book">
+            <title>Book 1</title>
+            <section level="chapter">
+                text of book 1, chapter 1, paragraph 1
+                text of book 1, chapter 1, paragraph 2
+            </section>
+            <section level="chapter">
+                text of book 1, chapter 2, paragraph 1
+                text of book 1, chapter 2, paragraph 2
+            </section>
+        </section>
+        <section level="book">
+            <title>Book 2</title>
+            <section level="chapter">
+                text of book 2, chapter 1, paragraph 1
+                text of book 2, chapter 1, paragraph 2
+            </section>
+            <section level="chapter">
+                text of book 2, chapter 2, paragraph 1
+                text of book 2, chapter 2, paragraph 2
+            </section>
+        </section>
+    </body>
+
+</document>
