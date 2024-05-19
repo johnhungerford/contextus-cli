@@ -2,6 +2,7 @@ package contextus.model.sefaria
 
 import contextus.model.xml.XmlContextusDoc
 import contextus.json.*
+import contextus.model.xml.XmlContextusDocConversion.CATEGORY_SEPARATOR
 
 /**
  * {
@@ -45,7 +46,7 @@ object SefariaIndexSimpleEntry:
 			heTitle = document.title + " HEBREW",
 			titleVariants = alternateTitles,
 			heTitleVariants = alternateTitles.map(_ + " HEBREW"),
-			categories = document.category.split(",").toList.map(_.trim),
+			categories = document.category.split(CATEGORY_SEPARATOR).toList.map(_.trim),
 			sectionNames = document.schema.levels,
 			enDesc = document.description,
 		)

@@ -1,5 +1,7 @@
 package contextus.model.sefaria
 
+import scala.annotation.tailrec
+
 final case class SefariaCategory(
 	name: String,
 	categories: List[SefariaCategory]
@@ -22,6 +24,18 @@ final case class SefariaCategory(
 
 object SefariaCategory:
 
+	def validate(categories: List[SefariaCategory], categoryPath: List[String]): Option[(List[String], String)] =
+		@tailrec
+		def loop(currentPath: List[String], remainingPath: List[String], categories: List[SefariaCategory]): Option[(List[String], String)] =
+			remainingPath match
+				case Nil => None
+				case cat :: nextRemainingPath =>
+					categories.filter(_.name == cat) match
+						case Nil => Some(currentPath -> cat)
+						case nextCategories => loop(currentPath :+ cat, nextRemainingPath, nextCategories.flatMap(_.categories))
+
+		loop(Nil, categoryPath, categories)
+
 	def deduplicate(categories: List[SefariaCategory]): List[SefariaCategory] =
 		categories.groupBy(_.name).map {
 			case (name, categories) =>
@@ -30,3 +44,6 @@ object SefariaCategory:
 
 	extension (categories: List[SefariaCategory])
 		def deduplicated: List[SefariaCategory] = deduplicate(categories)
+
+		def validated(categoryPath: List[String]): Option[(List[String], String)] =
+			SefariaCategory.validate(categories, categoryPath)

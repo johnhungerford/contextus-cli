@@ -5,7 +5,7 @@
 
     <author>Test Author</author>
 
-    <category>Test Category 1, Test Category 2</category>
+    <category>Test Category 1 / Test Category 2</category>
 
     <schema paragraphBreak="line-break">
         <level>book</level>

@@ -5,10 +5,12 @@ import cats.syntax.all.*
 import contextus.model.types.NonEmptyList
 
 object XmlContextusDocConversion:
+	val CATEGORY_SEPARATOR = "/"
+
 	def convert(xmlDoc: XmlContextusDoc): Either[String, ContextusDoc] = for {
 		title <- Title.parse(xmlDoc.title)
 		author <- Author.parse(xmlDoc.author)
-		parsedCategories = xmlDoc.category.split(",").toList.map(v => Category.parse(v.trim))
+		parsedCategories = xmlDoc.category.split(CATEGORY_SEPARATOR).toList.map(v => Category.parse(v.trim))
 		categoryList <- parsedCategories.sequence
 		category <- NonEmptyList.parse(categoryList)
 		compositionYear <- xmlDoc.publicationYear.map(Year.parse).sequence

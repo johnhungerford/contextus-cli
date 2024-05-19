@@ -5,7 +5,7 @@ import contextus.model.xml.{Body, Schema, XmlContextusDoc, XmlContextusDocConver
 import zio.test.*
 
 object ContextusDocTest extends ZIOSpecDefault:
-	val simpleDoc = XmlContextusDocSpec.basicDoc.copy(category = "category1, category2")
+	val simpleDoc = XmlContextusDocSpec.basicDoc.copy(category = "category1 / category2")
 
 	val complexDoc = XmlContextusDoc(
 		"Title",
@@ -14,7 +14,7 @@ object ContextusDocTest extends ZIOSpecDefault:
 		Some(1999),
 		Some("Here is the long description"),
 		Some("Short description"),
-		"category1, category2",
+		"category1 / category2",
 		Schema(
 			List("paragraph"),
 		),

@@ -1,6 +1,7 @@
 package contextus.service
 
-import contextus.model.xml.XmlContextusDoc
+import contextus.model.contextus.ContextusDoc
+import contextus.model.xml.{XmlContextusDoc, XmlContextusDocConversion}
 import contextus.model.DomainError.{DecodingError, IOError}
 import zio.*
 import zio.stream.*
@@ -10,9 +11,9 @@ import scala.jdk.CollectionConverters.*
 import contextus.phobos.PhobosZIO.*
 
 trait ContextusFileService:
-	def streamFromDirectory(directory: Path): ZStream[Any, ContextusFileService.Error, XmlContextusDoc]
+	def streamFromDirectory(directory: Path): ZStream[Any, ContextusFileService.Error, ContextusDoc]
 
-	def getDocument(path: Path): IO[ContextusFileService.Error, Option[XmlContextusDoc]]
+	def getDocument(path: Path): IO[ContextusFileService.Error, Option[ContextusDoc]]
 
 object ContextusFileService:
 	type Error = DecodingError | IOError.FileIOError
@@ -20,7 +21,7 @@ object ContextusFileService:
 	val live: ULayer[ContextusFileService] = ZLayer.succeed(Live)
 
 	private object Live extends ContextusFileService:
-		def streamFromDirectory(directory: Path): ZStream[Any, Error, XmlContextusDoc] =
+		def streamFromDirectory(directory: Path): ZStream[Any, Error, ContextusDoc] =
 			ZStream
 				.fromIterator(Files.newDirectoryStream(directory).iterator().asScala)
 				.mapError[Error] { err =>
@@ -34,14 +35,20 @@ object ContextusFileService:
 					case Some(doc) => doc
 				}
 
-		def getDocument(path: Path): IO[Error, Option[XmlContextusDoc]] =
+		def getDocument(path: Path): IO[Error, Option[ContextusDoc]] =
 			val unhandled = for {
 				exists <- ZIO.attempt(Files.exists(path))
 				_ <- ZIO.fail(()).when(!exists)
 				isDir <- ZIO.attempt(Files.isDirectory(path))
 				_ <- ZIO.fail(()).when(isDir)
 				data <- ZIO.attempt(Files.readString(path))
-				doc <- data.decodeXmlZIO[XmlContextusDoc]
+				xmlDoc <- data.decodeXmlZIO[XmlContextusDoc]
+				doc <- ZIO.fromEither(
+					XmlContextusDocConversion
+					  .convert(xmlDoc)
+					  .left
+					  .map(str => DecodingError(Right("XmlContextusDoc"), str, None))
+				)
 			} yield doc
 			unhandled.foldZIO(
 				{

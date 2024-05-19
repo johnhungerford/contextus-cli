@@ -26,7 +26,7 @@ object ContextusCli:
 					  *> ZIO.fail(())
 			}
 			contextusService <- ZIO.service[ContextusService]
-//			_ <- contextusService.validateDocument(contextusDoc)
+			_ <- contextusService.validateDocument(contextusDoc)
 			_ <- contextusService.indexDocument(contextusDoc)
 		} yield ())
 
@@ -43,7 +43,7 @@ object ContextusCli:
 					  *> ZIO.fail(())
 			}
 			contextusService <- ZIO.service[ContextusService]
-//			_ <- contextusService.validateDocument(contextusDoc)
+			_ <- contextusService.validateDocument(contextusDoc)
 			_ <- contextusService.submitDocumentVersion(contextusDoc)
 		} yield ())
 
