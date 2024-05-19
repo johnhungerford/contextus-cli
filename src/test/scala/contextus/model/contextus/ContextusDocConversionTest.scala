@@ -4,9 +4,9 @@ import contextus.model.sefaria.{SefariaAddressType, SefariaIndexEntry, SefariaSc
 import zio.test.*
 
 object ContextusDocConversionTest extends ZIOSpecDefault:
-	
+
 	val simpleDoc = ContextusDocTest.expectedSimpleDoc
-	
+
 	val simpleDocExpected = SefariaIndexEntry(
 		title = simpleDoc.title,
 		heTitle = simpleDoc.title + " HEBREW",
@@ -26,9 +26,9 @@ object ContextusDocConversionTest extends ZIOSpecDefault:
 		is_cited = None,
 		compDateString = None,
 	)
-	
+
 	val complexDoc = ContextusDocTest.expectedComplexDoc
-	
+
 	val complexDocExpected = SefariaIndexEntry(
 		title = complexDoc.title,
 		heTitle = complexDoc.title + " HEBREW",
@@ -36,38 +36,46 @@ object ContextusDocConversionTest extends ZIOSpecDefault:
 		heTitleVariants = Nil,
 		categories = List("category1", "category2"),
 		heCategories = Nil,
-		schemaOrSections = Left(List(
-			SefariaSchemaNode.Text(
-				title = "Preface",
-				heTitle = "Preface HEBREW",
-				titles = List(SefariaTitle("Preface", "en", Some(true))),
-				key = "Preface",
-				sectionNames = List("paragraph"),
-				heSectionNames = List("paragraph HEBREW"),
-				depth = 1,
-				addressTypes = List(SefariaAddressType.Integer),
-			),
-			SefariaSchemaNode.Text(
-				title = "Book 1",
-				heTitle = "Book 1 HEBREW",
-				titles = List(SefariaTitle("Book 1", "en", Some(true))),
-				key = "Book 1",
-				sectionNames = List("chapter", "paragraph"),
-				heSectionNames = List("chapter HEBREW", "paragraph HEBREW"),
-				depth = 2,
-				addressTypes = List(SefariaAddressType.Integer, SefariaAddressType.Integer),
-			),
-			SefariaSchemaNode.Text(
-				title = "Book 2",
-				heTitle = "Book 2 HEBREW",
-				titles = List(SefariaTitle("Book 2", "en", Some(true))),
-				key = "Book 2",
-				sectionNames = List("chapter", "paragraph"),
-				heSectionNames = List("chapter HEBREW", "paragraph HEBREW"),
-				depth = 2,
-				addressTypes = List(SefariaAddressType.Integer, SefariaAddressType.Integer),
-			),
-		)),
+		schemaOrSections = Left(
+			SefariaSchemaNode.Section(
+				title = complexDoc.title,
+				heTitle = complexDoc.title + " HEBREW",
+				key = complexDoc.title,
+				titles = List(SefariaTitle(complexDoc.title, "en", Some(true)), SefariaTitle(complexDoc.title + " HEBREW", "he", Some(true))),
+				nodes = List(
+					SefariaSchemaNode.Text(
+						title = "Preface",
+						heTitle = "Preface HEBREW",
+						titles = List(SefariaTitle("Preface", "en", Some(true)), SefariaTitle("Preface HEBREW", "he", Some(true))),
+						key = "Preface",
+						sectionNames = List("paragraph"),
+						heSectionNames = List("paragraph HEBREW"),
+						depth = 1,
+						addressTypes = List(SefariaAddressType.Integer),
+					),
+					SefariaSchemaNode.Text(
+						title = "Book 1",
+						heTitle = "Book 1 HEBREW",
+						titles = List(SefariaTitle("Book 1", "en", Some(true)), SefariaTitle("Book 1 HEBREW", "he", Some(true))),
+						key = "Book 1",
+						sectionNames = List("chapter", "paragraph"),
+						heSectionNames = List("chapter HEBREW", "paragraph HEBREW"),
+						depth = 2,
+						addressTypes = List(SefariaAddressType.Integer, SefariaAddressType.Integer),
+					),
+					SefariaSchemaNode.Text(
+						title = "Book 2",
+						heTitle = "Book 2 HEBREW",
+						titles = List(SefariaTitle("Book 2", "en", Some(true)), SefariaTitle("Book 2 HEBREW", "he", Some(true))),
+						key = "Book 2",
+						sectionNames = List("chapter", "paragraph"),
+						heSectionNames = List("chapter HEBREW", "paragraph HEBREW"),
+						depth = 2,
+						addressTypes = List(SefariaAddressType.Integer, SefariaAddressType.Integer),
+					),
+				),
+			)
+		),
 		order = None,
 		authors = None,
 		enDesc = complexDoc.description,
@@ -79,12 +87,12 @@ object ContextusDocConversionTest extends ZIOSpecDefault:
 		is_cited = None,
 		compDateString = None,
 	)
-	
+
 	override def spec = suite("ContextusDocConversionTest")(
 		test("simple doc") {
 			val sefariaIndexEntry = ContextusDocConversion
 				.contextusDocToSefariaIndexEntry(simpleDoc)
-			
+
 			assertTrue(sefariaIndexEntry == Right(simpleDocExpected))
 		},
 
