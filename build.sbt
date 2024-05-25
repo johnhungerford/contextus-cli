@@ -59,7 +59,7 @@ lazy val root = (project in file("."))
           "--enable-url-protocols=http",
           "--install-exit-handlers",
           "--enable-http",
-          "--allow-incomplete-classpath",
+//          "--target=osx-amd64",
       ),
       nativeImageInstalled      := true,
       Compile / mainClass       := Some("Main"),

@@ -11,8 +11,9 @@ object FilesystemCommands:
 	val lsCommand = Command(
 		"list",
 		dirArg,
-	).map { dirOpt =>
-		val dir = dirOpt.fold(Path(""))(p => Path.fromJava(p))
-		val contents = Files.list(dir)
-		contents.foreach(p => Console.printLine(p.filename).orDie).orDie
-	}
+	).withHelp("List all documents and subdirectory in a directory")
+	 	.map { dirOpt =>
+			val dir = dirOpt.fold(Path(""))(p => Path.fromJava(p))
+			val contents = Files.list(dir)
+			contents.foreach(p => Console.printLine(p.filename).orDie).orDie
+		}

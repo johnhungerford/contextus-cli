@@ -26,8 +26,8 @@ sealed trait SefariaIndexNode:
 		def categoryOption: Option[SefariaCategory] = self match
 			case _: SefariaIndexNode.DocumentNode => None
 			case cat: SefariaIndexNode.CategoryNode =>
-				Some(SefariaCategory(
-					name = cat.category,
+				cat.category.map(c => SefariaCategory(
+					name = c,
 					categories = cat.contents.toList.flatMap(_.flatMap(_.categoryOption.toList)),
 				))
 
@@ -37,13 +37,13 @@ sealed trait SefariaIndexNode:
 					List(doc.title)
 				else Nil
 			case cat: SefariaIndexNode.CategoryNode =>
-				val nextParentCategory = categories.find(_ == cat.category)
+				val nextParentCategory = categories.find(cat.category.contains)
 				cat.contents.toList.flatMap(_.flatMap(_.titles(categories, nextParentCategory)))
 
 object SefariaIndexNode:
 	final case class DocumentNode(
 		categories: List[String],
-		order: Option[Int],
+//		order: Option[Int],
 		primary_category: String,
 		enShortDesc: Option[String],
 		heShortDesc: Option[String],
@@ -58,7 +58,7 @@ object SefariaIndexNode:
 
 	final case class CategoryNode(
 		contents: Option[List[SefariaIndexNode]],
-		order: Option[Int],
+//		order: Option[Int],
 		enComplete: Option[Boolean],
 		heComplete: Option[Boolean],
 		enDesc: Option[String],
@@ -66,7 +66,7 @@ object SefariaIndexNode:
 		enShortDesc: Option[String],
 		heShortDesc: Option[String],
 		heCategory: Option[String],
-		category: String,
+		category: Option[String],
 	) extends SefariaIndexNode
 
 	object CategoryNode:

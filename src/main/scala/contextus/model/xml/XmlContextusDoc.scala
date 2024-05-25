@@ -7,96 +7,30 @@ import ru.tinkoff.phobos.derivation.semiauto.*
 import ru.tinkoff.phobos.encoding.*
 import ru.tinkoff.phobos.decoding.*
 import ParseIndent.{Auto, IgnoreIndent}
+import contextus.service.XmlTextProcessingService
 import contextus.util.HandleIndents
 
 
 final case class XmlContextusDoc(
-	title: String,
+	title: Option[String],
 	@renamed("alternateTitle") alternateTitles: Option[List[String]],
-	author: String,
+	author: Option[String],
 	@renamed("composition-year") publicationYear: Option[Int],
 	description: Option[String],
 	@renamed("short-description") shortDescription: Option[String],
-	@renamed("category") category: String,
-	schema: Schema,
-	version: Version,
-	@renamed("body") body: Body,
+	@renamed("category") category: Option[String],
+	schema: Option[Schema],
+	version: Option[Version],
+	@renamed("body") body: Option[Body],
 )
 
 object XmlContextusDoc:
 	given XmlEncoder[XmlContextusDoc] = deriveXmlEncoder("document")
 	given XmlDecoder[XmlContextusDoc] = deriveXmlDecoder("document")
 
-	given Validation[XmlContextusDoc] with {
-		override val identifier = "ContextusDoc"
-
-		private def validateLevels(section: Section, levels: List[String], paragraphBreak: ParagraphBreak): Option[ValidationErrorWithoutIdentifier] =
-			(section.parsedText(paragraphBreak), levels) match
-				case (_, Nil) => Some(ValidationErrorWithoutIdentifier(Some(section.toString), Some("the number levels in the document exceed the number of levels specified in the schema")))
-				case (Some(_: String), level :: Nil) =>
-					if section.level.contains(level) then None
-					else Some(ValidationErrorWithoutIdentifier(Some(section.toString), Some(s"section level ${section.level} does not match schema level $level")))
-				case (Some(_: List[String]), level :: _ :: Nil) =>
-					if section.level.contains(level) then None
-					else Some(ValidationErrorWithoutIdentifier(Some(section.toString), Some(s"section level ${section.level} does not match schema level $level")))
-				case (Some(_), _) =>
-					Some(ValidationErrorWithoutIdentifier(Some(section.toString), Some(s"the number of levels in the schema exceeds the number of levels found in the document")))
-				case (None, _ :: nextLevels) =>
-					section
-						.subSections
-						.foldLeft(None: Option[ValidationErrorWithoutIdentifier]) {
-							case (opt @ Some(_), _) => opt
-							case (None, nextSection) => nextLevels match
-								case Nil =>
-									Some(ValidationErrorWithoutIdentifier(Some(nextSection.toString), Some(s"the number levels in the document exceed the number of levels specified in the schema")))
-								case _ :: next =>
-									validateLevels(nextSection, nextLevels, paragraphBreak)
-						}
-
-		override protected def validateImplementation(
-			value: XmlContextusDoc,
-		): Option[ValidationErrorWithoutIdentifier] =
-			val bodyValidation = Validation.validate(value.body)
-			val levelValidation =
-				if value.body.textIsEmpty then
-					value.body.sections.foldLeft(None: Option[ValidationErrorWithoutIdentifier]) {
-						(lastValidationOpt, nextSection) => lastValidationOpt match
-							case None => validateLevels(nextSection, value.schema.levels, value.schema.paragraphBreak)
-							case fail @ Some(_) => fail
-					}
-				else validateLevels(
-					Section(
-						None,
-						value.schema.levels.headOption,
-						Nil,
-						value.body.rawText,
-					),
-					value.schema.levels,
-					value.schema.paragraphBreak,
-				)
-			val schemaValidation = Validation[Schema]
-			  .validate(value.schema)
-
-			(levelValidation.toList ++ schemaValidation.toList) match
-				case Nil => None
-				case (err: ValidationErrorWithoutIdentifier) :: Nil =>
-					Some(err.copy(serializedValue = Some(value.toString)))
-				case (err: ValidationError) :: Nil =>
-					Some(ValidationErrorWithoutIdentifier(
-						Some(value.toString),
-						Some("Invalid schema"),
-						List(err),
-					))
-				case both => Some(ValidationErrorWithoutIdentifier(
-					Some(value.toString),
-					Some("Invalid schema and invalid number of levels"),
-					both,
-				))
-	}
-
 final case class Version(
-	title: String,
-	source: String,
+	title: Option[String],
+	source: Option[String],
 	language: Option[String]
 )
 
@@ -187,20 +121,6 @@ object Schema:
 	given ElementEncoder[Schema] = deriveElementEncoder
 	given ElementDecoder[Schema] = deriveElementDecoder
 
-	given Validation[Schema] with {
-		override val identifier = "Schema"
-
-		override protected def validateImplementation(
-			value: Schema,
-		): Option[ValidationErrorWithoutIdentifier] =
-			val levels = value.levels
-			if levels.toSet.size == levels.size then None
-			else Some(ValidationErrorWithoutIdentifier(
-				Some(value.toString),
-				Some("Multiple section levels have the same name"),
-			))
-	}
-
 final case class Body(
 	@renamed("section") sections: List[Section],
 	@text rawText: String,
@@ -212,11 +132,16 @@ final case class Body(
 		Section(None, None, sections, rawText, None)
 
 	def parsedText(
+		textProcessingService: XmlTextProcessingService,
 		paragraphBreak: ParagraphBreak,
 		indent: ParseIndent = ParseIndent.Auto,
 	): Option[String | List[String]] = Option.when(!textIsEmpty)(rawText).map {
 		textStringWithIndents =>
-			val textString = HandleIndents(textStringWithIndents, indent)
+			val processedText =
+				textProcessingService.processPostIngest(
+					textStringWithIndents,
+				)
+			val textString = HandleIndents(processedText, indent)
 			paragraphBreak match
 				case ParagraphBreak.IgnoreParagraphs =>
 					textString
@@ -233,25 +158,6 @@ object Body:
 	given ElementEncoder[Body] = deriveElementEncoder
 	given ElementDecoder[Body] = deriveElementDecoder
 
-	given Validation[Body] with
-		override def identifier: String = "Section"
-
-		override protected def validateImplementation(
-			value: Body,
-		): Option[ValidationErrorWithoutIdentifier] =
-			if !value.textIsEmpty && value.sections.nonEmpty then
-				Some(ValidationErrorWithoutIdentifier(
-					Some(value.toString),
-					Some("Section has both text and subsections"),
-				))
-			else if value.textIsEmpty && value.sections.isEmpty then
-				Some(ValidationErrorWithoutIdentifier(
-					Some(value.toString),
-					Some("Section has neither text nor subsections"),
-				))
-			else None
-
-
 final case class Section(
 	title: Option[String],
 	@attr level: Option[String],
@@ -263,11 +169,15 @@ final case class Section(
 		rawText.isBlank
 
 	def parsedText(
+		textProcessingService: XmlTextProcessingService,
 		paragraphBreak: ParagraphBreak,
 		indent: ParseIndent = ParseIndent.Auto,
 	): Option[String | List[String]] = Option.when(!textIsEmpty)(rawText).map {
 		textStringWithIndents =>
-			val textString = HandleIndents(textStringWithIndents, indent)
+			val processedText =
+				textProcessingService.processPostIngest(textStringWithIndents)
+
+			val textString = HandleIndents(processedText, indent)
 			paragraphBreak match
 				case ParagraphBreak.IgnoreParagraphs =>
 					textString
@@ -282,21 +192,3 @@ final case class Section(
 object Section:
 	given ElementEncoder[Section] = deriveElementEncoder
 	given ElementDecoder[Section] = deriveElementDecoder
-
-	given Validation[Section] with
-		override def identifier: String = "Section"
-
-		override protected def validateImplementation(
-			value: Section,
-		): Option[ValidationErrorWithoutIdentifier] =
-			if !value.textIsEmpty && value.subSections.nonEmpty then
-				Some(ValidationErrorWithoutIdentifier(
-					Some(value.toString),
-					Some("Section has both text and subsections"),
-				))
-			else if value.textIsEmpty && value.subSections.isEmpty then
-				Some(ValidationErrorWithoutIdentifier(
-					Some(value.toString),
-					Some("Section has neither text nor subsections"),
-				))
-			else None

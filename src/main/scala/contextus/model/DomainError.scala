@@ -32,3 +32,6 @@ object DomainError:
 		underlyingErrors: List[ValidationError] = Nil,
 		underlyingException: Option[Throwable] = None,
 	)
+	
+	enum ConfigError:
+		case MissingValue(property: String, message: String)

@@ -5,10 +5,12 @@ import contextus.model.xml.{XmlContextusDoc, XmlContextusDocConversion}
 import contextus.model.DomainError.{DecodingError, IOError}
 import zio.*
 import zio.stream.*
+import zio.nio.file.*
 
-import java.nio.file.*
 import scala.jdk.CollectionConverters.*
 import contextus.phobos.PhobosZIO.*
+
+import java.nio.charset.StandardCharsets
 
 trait ContextusFileService:
 	def streamFromDirectory(directory: Path): ZStream[Any, ContextusFileService.Error, ContextusDoc]
@@ -18,12 +20,11 @@ trait ContextusFileService:
 object ContextusFileService:
 	type Error = DecodingError | IOError.FileIOError
 
-	val live: ULayer[ContextusFileService] = ZLayer.succeed(Live)
+	val live = ZLayer.fromZIO(ZIO.serviceWith[XmlTextProcessingService][ContextusFileService](Live.apply))
 
-	private object Live extends ContextusFileService:
+	private case class Live(textProcessingService: XmlTextProcessingService) extends ContextusFileService:
 		def streamFromDirectory(directory: Path): ZStream[Any, Error, ContextusDoc] =
-			ZStream
-				.fromIterator(Files.newDirectoryStream(directory).iterator().asScala)
+			Files.newDirectoryStream(directory)
 				.mapError[Error] { err =>
 					IOError.FileIOError(
 						directory.toAbsolutePath.toString,
@@ -37,14 +38,15 @@ object ContextusFileService:
 
 		def getDocument(path: Path): IO[Error, Option[ContextusDoc]] =
 			val unhandled = for {
-				exists <- ZIO.attempt(Files.exists(path))
+				exists <- Files.exists(path)
 				_ <- ZIO.fail(()).when(!exists)
-				isDir <- ZIO.attempt(Files.isDirectory(path))
+				isDir <- Files.isDirectory(path)
 				_ <- ZIO.fail(()).when(isDir)
-				data <- ZIO.attempt(Files.readString(path))
-				xmlDoc <- data.decodeXmlZIO[XmlContextusDoc]
+				xml <- Files.readAllBytes(path).map(_.asString(StandardCharsets.UTF_8))
+				processedXml = textProcessingService.processPreIngest(xml)
+				xmlDoc <- processedXml.decodeXmlZIO[XmlContextusDoc]
 				doc <- ZIO.fromEither(
-					XmlContextusDocConversion
+					XmlContextusDocConversion(textProcessingService)
 					  .convert(xmlDoc)
 					  .left
 					  .map(str => DecodingError(Right("XmlContextusDoc"), str, None))

@@ -15,3 +15,6 @@ object NonEmptyList:
 		case head :: next => Right(apply(head, next))
 		case Nil => Left("NonEmptyList cannot be empty")
 		
+	extension [T] (nel: NonEmptyList[T]) 
+		def safeLast: T = nel.last
+

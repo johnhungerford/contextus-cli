@@ -1,6 +1,5 @@
 package contextus.model.sefaria
 
-import contextus.model.xml.*
 import contextus.json.*
 import io.circe.Decoder.Result
 import io.circe.{HCursor, Json}
@@ -29,22 +28,6 @@ object SefariaText:
 					} yield nextValue :: currentList
 			}).map(list => SefariaText(list.reverse))
 
-	def fromContextusSection(paragraphBreak: ParagraphBreak, parseIndent: ParseIndent)(section: Section): String | SefariaText =
-		section.parsedText(paragraphBreak, parseIndent) match
-			case Some(string: String) => string
-			case Some(sections: List[String]) => SefariaText(sections)
-			case None => fromContextusSections(section.subSections, paragraphBreak, parseIndent)
-
-	def fromContextusSections(sections: List[Section], paragraphBreak: ParagraphBreak, parseIndent: ParseIndent): SefariaText =
-		SefariaText(sections.map(fromContextusSection(paragraphBreak, parseIndent)))
-
-	def fromContextusDoc(doc: XmlContextusDoc): SefariaText =
-		val Schema(_, paragraphBreak, parseIndent) = doc.schema
-		fromContextusSection(paragraphBreak, parseIndent)(doc.body.textAsSection) match
-			case str: String => SefariaText(List(str))
-			case sect: SefariaText => sect
-
-
 /**
  * {
  *   "versionTitle": "Sefaria Community Translation",
@@ -66,14 +49,3 @@ final case class SefariaTextSubmission(
 object SefariaTextSubmission:
 	given Encoder[SefariaTextSubmission] = deriveEncoder
 	given Decoder[SefariaTextSubmission] = deriveDecoder
-
-	def fromContextusDoc(document: XmlContextusDoc): SefariaTextSubmission =
-		SefariaTextSubmission(
-			versionTitle = document.version.title,
-			versionSource = document.version.source,
-			text = SefariaText.fromContextusDoc(document),
-			language = document
-			  .version
-			  .language
-			  .getOrElse("en"),
-		)

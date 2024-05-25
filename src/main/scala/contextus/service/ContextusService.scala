@@ -5,7 +5,7 @@ import zio.*
 import zio.stream.*
 import contextus.model.DomainError.*
 import contextus.model.contextus.ContextusDocConversion
-import contextus.model.sefaria.{SefariaIndexSimpleEntry, SefariaRef, SefariaText, SefariaTextSubmission}
+import contextus.model.sefaria.{SefariaRef, SefariaText, SefariaTextSubmission}
 import contextus.model.xml.XmlContextusDocConversion.CATEGORY_SEPARATOR
 import contextus.validation.Validation
 

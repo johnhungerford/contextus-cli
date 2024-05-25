@@ -12,23 +12,23 @@ import scala.io.Source
 object XmlContextusDocSpec extends ZIOSpecDefault:
 	val basicDoc =
 		XmlContextusDoc(
-			"Test Title",
+			Some("Test Title"),
 			None,
-			"Test Author",
+			Some("Test Author"),
 			None,
 			None,
 			None,
-			"",
-			Schema(
+			Some(""),
+			Some(Schema(
 				List("book", "chapter", "paragraph"),
 				ParagraphBreak.LineBreak,
-			),
-			Version(
-				"Original version",
-				"http://johnhungerford.github.io",
+			)),
+			Some(Version(
+				Some("Original version"),
+				Some("http://johnhungerford.github.io"),
 				None,
-			),
-			Body(
+			)),
+			Some(Body(
 				List(
 					Section(
 						None,
@@ -71,7 +71,7 @@ object XmlContextusDocSpec extends ZIOSpecDefault:
 				),
 				"",
 			)
-		)
+		))
 
 	override def spec = suite("ContextusDoc")(
 		suite("serialization/deserialization")(
@@ -94,7 +94,7 @@ object XmlContextusDocSpec extends ZIOSpecDefault:
 					doc <- text.decodeXmlZIO[XmlContextusDoc]
 					_ <- ZIO.logInfo(doc.toString)
 				} yield assertTrue(
-					doc.title == "Test Title"
+					doc.title.contains("Test Title")
 				)
 			},
 			test("should deserialize from file") {
@@ -114,62 +114,5 @@ object XmlContextusDocSpec extends ZIOSpecDefault:
 //					doc == basicDoc,
 //				)
 //			},
-		),
-		suite("validation")(
-			test("a valid document with sections specified by line breaks should be valid") {
-				val validationResult = Validation.validate(basicDoc)
-				assertTrue(validationResult.isEmpty)
-			},
-			test("a valid document without sections specified by line breaks should be valide") {
-				val doc = basicDoc.copy(schema = Schema(
-					levels = basicDoc.schema.levels.take(2),
-					paragraphBreak = ParagraphBreak.IgnoreParagraphs,
-				))
-				val validationResult = Validation.validate(doc)
-				assertTrue(validationResult.isEmpty)
-			},
-			test("a document with duplicate levels should be invalid") {
-				val doc = basicDoc.copy(schema = Schema(levels = List("a", "b", "a"), paragraphBreak = ParagraphBreak.LineBreak))
-				val validationResult = Validation.validate(doc)
-				assertTrue(
-					validationResult.nonEmpty,
-					validationResult.exists(_.identifier == "ContextusDoc"),
-					validationResult.exists(_.underlyingErrors.exists(_.identifier == "Schema")),
-				)
-			},
-			test("a document without the defined levels should be invalid when parseParagraph is not IgnoreParagraphs") {
-				val doc1 = basicDoc.copy(schema = Schema(levels = List("a", "b"), paragraphBreak = ParagraphBreak.LineBreak))
-				val doc2 = doc1.copy(schema = doc1.schema.copy(paragraphBreak = ParagraphBreak.MultiLineBreak))
-				val doc3 = doc1.copy(schema = doc1.schema.copy(paragraphBreak = ParagraphBreak.MultiLineBreakRemoveSingleLineBreaks))
-				val validationResult1 = Validation.validate(doc1)
-				val validationResult2 = Validation.validate(doc2)
-				val validationResult3 = Validation.validate(doc3)
-				assertTrue(
-					validationResult1.map(_.copy(serializedValue = None)) == validationResult2.map(_.copy(serializedValue = None)),
-					validationResult1.map(_.copy(serializedValue = None)) == validationResult3.map(_.copy(serializedValue = None)),
-					validationResult1.nonEmpty,
-					validationResult1.exists(_.identifier == "ContextusDoc"),
-					validationResult1.exists(_.underlyingErrors.isEmpty),
-				)
-			},
-			test("a document without the defined levels should be invalid when parseParagraph = IgnoreParagraphs") {
-				val doc = basicDoc.copy(schema = Schema(levels = List("a"), paragraphBreak = ParagraphBreak.IgnoreParagraphs))
-				val validationResult = Validation.validate(doc)
-				assertTrue(
-					validationResult.nonEmpty,
-					validationResult.exists(_.identifier == "ContextusDoc"),
-					validationResult.exists(_.underlyingErrors.isEmpty),
-				)
-			},
-			test("a document with a section level that doesn't match the corresponding schema level should be invalid") {
-				val doc = basicDoc.copy(schema = basicDoc.schema.copy(levels = List("book", "derp", "paragraph")))
-				val validationResult = Validation.validate(doc)
-				println(validationResult)
-				assertTrue(
-					validationResult.nonEmpty,
-					validationResult.exists(_.identifier == "ContextusDoc"),
-					validationResult.exists(_.underlyingErrors.isEmpty),
-				)
-			},
 		),
 	)

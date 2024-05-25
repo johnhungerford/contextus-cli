@@ -3,20 +3,29 @@ package contextus.model.xml
 import contextus.model.contextus.{Author, Category, ComplexDocContent, ContentSection, ContextusDoc, Description, DocVersion, ShortDescription, SimpleDocContent, Title, Year}
 import cats.syntax.all.*
 import contextus.model.types.NonEmptyList
+import contextus.service.XmlTextProcessingService
 
-object XmlContextusDocConversion:
-	val CATEGORY_SEPARATOR = "/"
+final case class XmlContextusDocConversion(textProcessingService: XmlTextProcessingService):
+	import XmlContextusDocConversion.CATEGORY_SEPARATOR
 
 	def convert(xmlDoc: XmlContextusDoc): Either[String, ContextusDoc] = for {
-		title <- Title.parse(xmlDoc.title)
-		author <- Author.parse(xmlDoc.author)
-		parsedCategories = xmlDoc.category.split(CATEGORY_SEPARATOR).toList.map(v => Category.parse(v.trim))
+		titleStr <- xmlDoc.title.toRight("Missing required <title> tag")
+		title <- Title.parse(titleStr)
+		authorStr <- xmlDoc.author.toRight("Missing required <author> tag")
+		author <- Author.parse(authorStr)
+		categoryStr <- xmlDoc.category.toRight("Missing required <category> tag")
+		parsedCategories = categoryStr.split(CATEGORY_SEPARATOR).toList.map(v => Category.parse(v.trim))
 		categoryList <- parsedCategories.sequence
 		category <- NonEmptyList.parse(categoryList)
 		compositionYear <- xmlDoc.publicationYear.map(Year.parse).sequence
 		description <- xmlDoc.description.map(Description.parse).sequence
 		shortDescription <- xmlDoc.shortDescription.map(ShortDescription.parse).sequence
-		content <- convertBody(title, xmlDoc.body, xmlDoc.schema)
+		body <- xmlDoc.body.toRight("Missing required <body> tag")
+		schema <- xmlDoc.schema.toRight("Missing required <schema> tag")
+		version <- xmlDoc.version.toRight("Missing required <version> tag")
+		versionTitle <- version.title.toRight("Missing required <title> tag within <version>")
+		versionSource <- version.source.toRight("Missing required <source> tag within <version>")
+		content <- convertBody(title, body, schema)
 	} yield ContextusDoc(
 		title = title,
 		author = author,
@@ -24,7 +33,7 @@ object XmlContextusDocConversion:
 		description = description,
 		shortDescription = shortDescription,
 		compositionYear = compositionYear,
-		version = DocVersion(xmlDoc.version.title, xmlDoc.version.source, xmlDoc.version.language),
+		version = DocVersion(versionTitle, versionSource, version.language),
 		content = content,
 	)
 
@@ -44,8 +53,20 @@ object XmlContextusDocConversion:
 				schema.levels match
 					case Nil => Left("Schema for a simple document has no levels: must include at least one level in your document schema for a simple document")
 					case level :: Nil =>
-						val section = Section(None, Some(level), Nil, txt)
-						convertTopLevelSections(title, List(section), schema)
+						body.parsedText(textProcessingService, schema.paragraphBreak, schema.indent) match
+							case None =>
+								Left(s"Unexpected error: parsed text was empty after being validated as non-empty. Contact your maintainer.")
+							case Some(textValue: String) =>
+								Right(SimpleDocContent(NonEmptyList(level), NonEmptyList(ContentSection.Text(textValue))))
+							case Some(textSections: List[String]) =>
+								for {
+									nonEmptySections <- NonEmptyList
+										.parse(textSections.map(t =>{
+											ContentSection.Text(t)
+										}))
+										.left
+										.map(_ => s"Unexpected error: document body is found to be empty after prior validation. Contact the maintainer.")
+								} yield SimpleDocContent(NonEmptyList(level), nonEmptySections)
 					case _ =>
 						Left("Simple document with only one level of sections has schema with multiple levels: the number of levels in the schema must match the number of levels in the document")
 
@@ -98,7 +119,7 @@ object XmlContextusDocConversion:
 		else schema.popLevel match
 			case None => Left("Section is empty: each section must contain text or subsections")
 			case Some((level, _)) if !section.level.contains(level) =>
-				Left(s"Section labeled with level ${section.level} corresponds to the level $level as defined in the schema.")
+				Left(s"Section labeled as level \"${section.level.getOrElse("!!ERR!!")}\" corresponds to the level \"$level\" as defined in the schema.")
 			case Some((_, nextSchema)) =>
 				// Handle sub-sections (we've already established it does not have both subsections and text)
 				if section.subSections.nonEmpty then for {
@@ -108,7 +129,7 @@ object XmlContextusDocConversion:
 				} yield ContentSection.Nested(nonEmptySections)
 
 				// Handle text (we've already established it does not have both subsections and text)
-				else section.parsedText(nextSchema.paragraphBreak, nextSchema.indent) match
+				else section.parsedText(textProcessingService, nextSchema.paragraphBreak, nextSchema.indent) match
 					case None =>
 						Left(s"Unexpected error: parsed text was empty after being validated as non-empty. Contact your maintainer.")
 					case Some(textValue: String) =>
@@ -122,7 +143,7 @@ object XmlContextusDocConversion:
 						else if nextSchema.levels.length > 1 then
 							Left("Number of levels defined in schemas exceeds the section depth.")
 						else for {
-							nonEmptySections <- NonEmptyList.parse(textSections.map(ContentSection.Text.apply))
+							nonEmptySections <- NonEmptyList.parse(textSections.map(t => ContentSection.Text(t)))
 								.left.map(_ => s"Unexpected error: document body is found to be empty after prior validation. Contact the maintainer.")
 						} yield ContentSection.Nested(nonEmptySections)
 
@@ -182,7 +203,7 @@ object XmlContextusDocConversion:
 					case None => Left(s"No levels defined for nested document ($title). All documents must have schema defined with at least one level.")
 					case Some(_, nextSchema) if nextSchema.levels.nonEmpty =>
 						Left(s"Number of levels defined in schema exceed the depth of sections for nested document $title.")
-					case Some(_, _) => section.parsedText(innerSchema.paragraphBreak, innerSchema.indent) match
+					case Some(_, _) => section.parsedText(textProcessingService, innerSchema.paragraphBreak, innerSchema.indent) match
 						case None =>
 							Left(s"Unexpected error: nested document ($title) was found to have no parsed text after having been validated as having text. Contact your maintainer.")
 						case Some(textValue: String) =>
@@ -207,3 +228,6 @@ object XmlContextusDocConversion:
 								nonEmptyLevels,
 								nonEmptySections,
 							)
+
+object XmlContextusDocConversion:
+	val CATEGORY_SEPARATOR = "/"

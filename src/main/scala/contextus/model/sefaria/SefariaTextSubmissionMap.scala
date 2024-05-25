@@ -1,7 +1,5 @@
 package contextus.model.sefaria
 
-import contextus.model.xml.{XmlContextusDoc, ParagraphBreak, ParseIndent, Schema, Section}
-
 import scala.collection.immutable.ListMap
 
 final case class SefariaRef private (
@@ -42,27 +40,3 @@ case class SefariaTextSubmissionMap(
 					language,
 				)
 		}
-
-object SefariaTextSubmissionMap:
-	private def textsFromSections(parentRef: SefariaRef, defaultSchema: Schema, sections: List[Section]): List[(SefariaRef, SefariaText)] =
-		if sections.forall(_.title.isEmpty) then
-			val text = SefariaText.fromContextusSections(sections, defaultSchema.paragraphBreak, defaultSchema.indent)
-			List((parentRef, text))
-		else sections.flatMap { section =>
-			val newRef = section.title.map(title => parentRef / title).getOrElse(parentRef)
-			val schema = section.schema.getOrElse(defaultSchema)
-			textsFromSections(newRef, schema, sections)
-		}
-
-
-	def fromContextusDoc(contextusDoc: XmlContextusDoc): SefariaTextSubmissionMap =
-		SefariaTextSubmissionMap(
-			contextusDoc.version.title,
-			contextusDoc.version.source,
-			contextusDoc.version.language.getOrElse("en"),
-			textsFromSections(
-				SefariaRef(contextusDoc.title),
-				contextusDoc.schema,
-				List(contextusDoc.body.textAsSection),
-			)
-		)

@@ -46,7 +46,7 @@ object ContextusDocConversion:
 			map = contextusDocContentToTextMap(document.title, document.content),
 		)
 
-	private def asHebrew(engl: String): String =
+	def asHebrew(engl: String): String =
 		engl + " HEBREW"
 
 	private def complexDocContentToSefariaSchemaNode(

@@ -7,6 +7,7 @@ object Dependencies {
 	val sttpVersion = "3.9.3"
 	val zioCliVersion = "0.5.0"
 	val zioNioVersion = "2.0.2"
+	val xmlVersion = "2.0.1"
 
 	val zio = Seq(
 		"dev.zio" %% "zio" % "2.0.21",
@@ -26,6 +27,7 @@ object Dependencies {
 
 	val phobos = Seq(
 		"ru.tinkoff" %% "phobos-core" % phobosVersion,
+		"org.scala-lang.modules" %% "scala-xml" % xmlVersion,
 	)
 
 	val json = Seq(

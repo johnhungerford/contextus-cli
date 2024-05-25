@@ -2,28 +2,29 @@ package contextus.model.contextus
 
 import contextus.model.types.NonEmptyList
 import contextus.model.xml.{Body, Schema, XmlContextusDoc, XmlContextusDocConversion, XmlContextusDocSpec}
+import contextus.service.XmlTextProcessingService
 import zio.test.*
 
 object ContextusDocTest extends ZIOSpecDefault:
-	val simpleDoc = XmlContextusDocSpec.basicDoc.copy(category = "category1 / category2")
+	val simpleDoc = XmlContextusDocSpec.basicDoc.copy(category = Some("category1 / category2"))
 
 	val complexDoc = XmlContextusDoc(
-		"Title",
+		Some("Title"),
 		Some(List("Alt Title 1", "Alt Title 2")),
-		"Author",
+		Some("Author"),
 		Some(1999),
 		Some("Here is the long description"),
 		Some("Short description"),
-		"category1 / category2",
-		Schema(
+		Some("category1 / category2"),
+		Some(Schema(
 			List("paragraph"),
-		),
-		contextus.model.xml.Version(
-			"Version Title",
-			"www.version.com",
+		)),
+		Some(contextus.model.xml.Version(
+			Some("Version Title"),
+			Some("www.version.com"),
 			Some("en"),
-		),
-		Body(
+		)),
+		Some(Body(
 			rawText = "",
 			sections = List(
 				contextus.model.xml.Section(
@@ -78,20 +79,20 @@ object ContextusDocTest extends ZIOSpecDefault:
 					Some(Schema(List("chapter", "paragraph"))),
 				),
 			)
-		)
+		))
 	)
 
 	val expectedComplexDoc = ContextusDoc(
-		title = Title.unsafeWrap(complexDoc.title),
-		author = Author.unsafeWrap(complexDoc.author),
+		title = Title.unsafeWrap(complexDoc.title.get),
+		author = Author.unsafeWrap(complexDoc.author.get),
 		category = NonEmptyList(Category.unsafeWrap("category1"), Category.unsafeWrap("category2")),
 		description = complexDoc.description.map(Description.unsafeWrap),
 		shortDescription = complexDoc.shortDescription.map(ShortDescription.unsafeWrap),
 		compositionYear = complexDoc.publicationYear.map(Year.unsafeWrap),
 		version = DocVersion(
-			complexDoc.version.title,
-			complexDoc.version.source,
-			complexDoc.version.language,
+			complexDoc.version.get.title.get,
+			complexDoc.version.get.source.get,
+			complexDoc.version.get.language,
 		),
 		content = NonEmptyList(
 			ComplexDocContent.Content(
@@ -134,16 +135,16 @@ object ContextusDocTest extends ZIOSpecDefault:
 	)
 
 	val expectedSimpleDoc = ContextusDoc(
-		title = Title.unsafeWrap(simpleDoc.title),
-		author = Author.unsafeWrap(simpleDoc.author),
+		title = Title.unsafeWrap(simpleDoc.title.get),
+		author = Author.unsafeWrap(simpleDoc.author.get),
 		category = NonEmptyList(Category.unsafeWrap("category1"), Category.unsafeWrap("category2")),
 		description = None,
 		shortDescription = None,
 		compositionYear = None,
 		version = DocVersion(
-			simpleDoc.version.title,
-			simpleDoc.version.source,
-			simpleDoc.version.language,
+			simpleDoc.version.get.title.get,
+			simpleDoc.version.get.source.get,
+			simpleDoc.version.get.language,
 		),
 		content = SimpleDocContent(
 			levels = NonEmptyList("book", "chapter", "paragraph"),
@@ -191,7 +192,7 @@ object ContextusDocTest extends ZIOSpecDefault:
 	override def spec = suite("ContextusDocTest")(
 		suite("from XmlContextusDoc")(
 			test("simple doc") {
-				XmlContextusDocConversion
+				XmlContextusDocConversion(XmlTextProcessingService.Live)
 					.convert(simpleDoc)
 					.map { doc =>
 						assertTrue(
@@ -200,7 +201,7 @@ object ContextusDocTest extends ZIOSpecDefault:
 					}
 			},
 			test("complex doc") {
-				XmlContextusDocConversion
+				XmlContextusDocConversion(XmlTextProcessingService.Live)
 					.convert(complexDoc)
 					.map { doc =>
 						assertTrue(

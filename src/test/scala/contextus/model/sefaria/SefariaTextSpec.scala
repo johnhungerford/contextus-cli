@@ -39,15 +39,4 @@ object SefariaTextSpec extends ZIOSpecDefault:
 				)
 			}
 		),
-		suite("from contextus") {
-			test("should construct SefariaText from ContextusDoc") {
-				for {
-					xmlStr <- ZIO.attempt(Source.fromResource("test-document.xml").mkString)
-					doc <- xmlStr.decodeXmlZIO[XmlContextusDoc]
-					text = SefariaText.fromContextusDoc(doc)
-				} yield assertTrue(
-					text == SefariaText(List(SefariaText(List(SefariaText(List("text of book 1, chapter 1, paragraph 1", "text of book 1, chapter 1, paragraph 2")),SefariaText(List("text of book 1, chapter 2, paragraph 1", "text of book 1, chapter 2, paragraph 2")))), SefariaText(List(SefariaText(List("text of book 2, chapter 1, paragraph 1", "text of book 2, chapter 1, paragraph 2")),SefariaText(List("text of book 2, chapter 2, paragraph 1", "text of book 2, chapter 2, paragraph 2")))))),
-				)
-			}
-		}
 	)

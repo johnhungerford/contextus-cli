@@ -10,14 +10,15 @@ trait PhobosZIO:
 	extension (xmlDoc: String)
 		def decodeXml[A: XmlDecoder: Tag]: Either[DecodingError, A] =
 			XmlDecoder[A]
-			  .decode(xmlDoc)
-			  .left
-			  .map( err =>
-				  DecodingError(
-					  Left(Tag[A].tag),
-					  s"${err.text} -- ${err.history.mkString("->")}",
-					  err.cause,
-			  ))
+				.decode(xmlDoc)
+				.left
+				.map( err => {
+					DecodingError(
+						Left(Tag[A].tag),
+						s"${err.text} -- ${err.history.mkString("->")}",
+						err.cause,
+					)
+				})
 		def decodeXmlZIO[A: XmlDecoder: Tag]: IO[DecodingError, A] =
 			ZIO.fromEither(xmlDoc.decodeXml)
 	
