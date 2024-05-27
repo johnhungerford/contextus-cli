@@ -49,7 +49,7 @@ object ContextusFileService:
 					XmlContextusDocConversion(textProcessingService)
 					  .convert(xmlDoc)
 					  .left
-					  .map(str => DecodingError(Right("XmlContextusDoc"), str, None))
+					  .map(err => DecodingError(Right("XmlContextusDoc"), err.toString, None))
 				)
 			} yield doc
 			unhandled.foldZIO(

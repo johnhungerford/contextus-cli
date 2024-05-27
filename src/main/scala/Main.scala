@@ -1,9 +1,10 @@
 import contextus.cli.ContextusCli
 import contextus.model.DomainError.DecodingError
-import contextus.service.{ConfigurationService, ContextusFileService, ContextusService, HttpService, SefariaService, XmlTextProcessingService}
+import contextus.service.{CachingService, ConfigurationService, ContextusFileService, ContextusService, HttpService, SefariaService, XmlTextProcessingService}
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.*
 import zio.cli.*
+
 import java.nio.file.Path
 
 
@@ -19,8 +20,8 @@ object Main extends ZIOAppDefault:
 			XmlTextProcessingService.live,
 			ConfigurationService.live,
 			SefariaService.Conf.live,
-
 //			ZLayer.succeed(SefariaService.Conf("http://localhost:8000", "abcdefg")),
+			CachingService.live,
 			HttpService.live,
 			HttpClientZioBackend.layer(),
 		)

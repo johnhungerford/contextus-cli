@@ -1,6 +1,8 @@
 import Dependencies.*
 
+import java.nio.file.{CopyOption, StandardCopyOption}
 import scala.collection.Seq
+import scala.sys.process.*
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -44,6 +46,8 @@ lazy val packageSettings = Seq(
 
 lazy val disablePackaging = Seq()
 
+val packageCli = taskKey[Unit]("Package Contextus CLI")
+
 lazy val root = (project in file("."))
   .enablePlugins(JavaAppPackaging, UniversalPlugin, NativeImagePlugin)
   .settings(
@@ -64,6 +68,20 @@ lazy val root = (project in file("."))
       nativeImageInstalled      := true,
       Compile / mainClass       := Some("Main"),
       assembly / mainClass      := Some("Main"),
+      packageCli := {
+          val packageFile = baseDirectory.value / "package"
+          val nativeImageFile = nativeImage.value
+          println(nativeImageFile.getAbsolutePath)
+//          nativeImageFile
+          java.nio.file.Files.copy(
+              nativeImageFile.toPath,
+              (packageFile / nativeImageFile.getName).toPath,
+              StandardCopyOption.REPLACE_EXISTING,
+          )
+          val zippedPackageFileName = s"contextus-${version.value}.zip"
+          val zippedPackageFile = baseDirectory.value / zippedPackageFileName
+          Process("zip" :: "-r" :: zippedPackageFile.getAbsolutePath :: "." :: Nil, Some(packageFile)).!
+      }
   )
 
 

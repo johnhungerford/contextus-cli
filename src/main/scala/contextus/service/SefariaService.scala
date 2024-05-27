@@ -31,7 +31,11 @@ trait SefariaService:
 object SefariaService:
 	type Error = IOError.HttpIOError | DecodingError | SefariaApiError
 
-	val live = ZLayer.fromFunction(Live.apply)
+	val live = ZLayer.scoped(for {
+		conf <- ZIO.service[Conf]
+		httpService <- ZIO.service[HttpService]
+		cache <- ZIO.serviceWithZIO[CachingService](_.cache[SefariaIndex])
+	} yield Live(conf, httpService, cache))
 
 	final case class Conf(
 		baseUrl: String,
@@ -49,6 +53,7 @@ object SefariaService:
 	final case class Live(
 		conf: Conf,
 		httpService: HttpService,
+		indexCache: Cache[SefariaIndex],
 	) extends SefariaService:
 		private val apiKey = conf.apiKey
 		private val correctedBaseUrl = conf.baseUrl.stripSuffix("/")
@@ -80,7 +85,7 @@ object SefariaService:
 				}
 			)
 
-		override def addEntryToIndex(submission: SefariaIndexEntry): IO[Error, Unit] =
+		override def addEntryToIndex(submission: SefariaIndexEntry): IO[Error, Unit] = indexCache.invalidating(()):
 			val titlePath = refToPath(submission.title)
 			val url = indexUrl + "/" + titlePath
 
@@ -134,7 +139,7 @@ object SefariaService:
 						).unit
 				}
 
-		override def getIndex: IO[Error, SefariaIndex] =
+		override def getIndex: IO[Error, SefariaIndex] = indexCache.cached((), Some(3.minutes)):
 			httpService.get(indexUrl)
 				.mapError {
 					case err: HttpIOError => err.copy(problem = s"Failed to retrieve index: ${err.problem}")
@@ -162,7 +167,7 @@ object SefariaService:
 
 		override def getIndexEntry(ref: SefariaRef): IO[Error, SefariaIndexEntry] = ???
 
-		override def updateCategories(update: SefariaCategoryUpdate): IO[Error, Unit] =
+		override def updateCategories(update: SefariaCategoryUpdate): IO[Error, Unit] = indexCache.invalidating(()):
 			val baseErrorMessage = s"Failed to update category: ${update.encodeJson}"
 
 			httpService
