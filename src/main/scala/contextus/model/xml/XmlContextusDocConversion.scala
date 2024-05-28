@@ -115,7 +115,7 @@ final case class XmlContextusDocConversion(textProcessingService: XmlTextProcess
 				case nested: ComplexDocContent.ContentList =>
 					nested.content
 			}
-		else Left("Document has some sections with titles and some sections without titles in the same level: must include titles for all sections within each level".asErr())
+		else Left("Document has some sections with titles/schemas and some sections without titles/schemas in the same level: must either include titles for all sections within each level or no titles (or schemas) for any section".asErr())
 
 	private def convertSimpleSections(
 		sections: List[Section],
