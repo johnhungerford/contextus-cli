@@ -2,6 +2,7 @@ target
 .idea
 .bsp
 package/contextus-cli
+package/~$*.docx
 contextus-*.zip
 .metals
 .bsp
