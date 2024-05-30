@@ -7,8 +7,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
         with:
-          version: '22.3.2' # GraalVM version
-          java-version: '17'
+          distribution: 'graalvm' # GraalVM version
+          java-version: '11'
           components: 'native-image'
       - uses: olafurpg/setup-scala@v11
         with:
