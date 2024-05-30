@@ -5,13 +5,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: olafurpg/setup-scala@v11
+        with:
+          java-version: 21
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: 'graalvm' # GraalVM version
           java-version: '21'
           components: 'native-image'
-      - uses: olafurpg/setup-scala@v11
-        with:
-          java-version: graalvm@22.3.2
       - name: Build and package
         run: sbt packageCli
