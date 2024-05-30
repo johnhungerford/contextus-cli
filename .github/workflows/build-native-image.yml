@@ -1,0 +1,17 @@
+name: GraalVM build
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.3.2' # GraalVM version
+          java-version: '11'
+          components: 'native-image'
+      - uses: olafurpg/setup-scala@v11
+        with:
+          java-version: graalvm@22.3.2
+      - name: Build and package
+        run: sbt packageCli

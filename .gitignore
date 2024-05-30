@@ -3,3 +3,5 @@ target
 .bsp
 package/contextus-cli
 contextus-*.zip
+.metals
+.bsp

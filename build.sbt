@@ -7,7 +7,7 @@ import scala.sys.process.*
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / scalaVersion     := "3.3.3"
-ThisBuild / version          := "0.1.0-SNAPSHOT"
+ThisBuild / version          := "0.1.1"
 ThisBuild / organization     := "io.github.johnhungerford"
 ThisBuild / organizationName := "johnhungerford"
 ThisBuild / resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype" +

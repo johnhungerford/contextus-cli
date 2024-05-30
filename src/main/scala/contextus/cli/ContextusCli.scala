@@ -7,14 +7,16 @@ import zio.cli.*
 import zio.cli.HelpDoc.Span.text
 import zio.Console.printLine
 import contextus.model.DomainError
+import contextus.model.contextus.Title
 import contextus.model.sefaria.{SefariaCategory, SefariaCategoryUpdate}
 import zio.nio.file.Files
 import zio.nio.file.Path
-
 import contextus.model.xml.XmlContextusDocConversion.CATEGORY_SEPARATOR
 import contextus.model.types.NonEmptyList
+import contextus.model.xml.{Body, Schema, Section, Version, XmlContextusDoc}
 
 import java.io.IOException
+import java.nio.charset.StandardCharsets
 import java.util.Locale.Category
 import scala.util.Try
 
@@ -28,7 +30,7 @@ object ContextusCli:
 		} yield Path.fromJava(javaPath))
 
 	val documentsArg: Args[ZStream[Any, DomainError.IOError, Path]] = documentArg
-	  	.repeat
+	  	.atLeast(1)
 		.map( fileList => {
 			val files = if fileList.isEmpty then List(Path("")) else fileList
 			ZStream
@@ -52,7 +54,7 @@ object ContextusCli:
 					.left
 					.map(_ => HelpDoc.p(s"Invalid category path $txt: provide at least one category level. (Separate levels with '${CATEGORY_SEPARATOR}')"))
 			})
-	
+
 	import DomainError.{IOError, SefariaApiError, DecodingError, ValidationError}
 
 	def handleErrorForDoc[R, T](
@@ -73,8 +75,8 @@ object ContextusCli:
 		case err: DomainError.IOError.FileIOError =>
 			Console.printLineError(message).orDie
 				*> ZIO.foreachDiscard(err.underlying)(err => printUnderlyingError(err))
-				*> Console.printLineError(s"Failure reading file: ${err.problem}").orDie
-				*> Console.printLineError(err.path).orDie
+				*> Console.printLineError(s"Failure reading or writing file: ${err.problem}").orDie
+				*> Console.printLineError(s"Failed path: ${err.path}").orDie
 		case err: DomainError.DecodingError =>
 			Console.printLineError(message).orDie
 				*> ZIO.foreachDiscard(err.underlying)(err => printUnderlyingError(err))
@@ -184,7 +186,7 @@ object ContextusCli:
 			categories <- sefariaService.getCategories
 			_ <- ZIO.foreachDiscard(categories)(cat => printCategory(0, cat))
 		} yield ()))
-	
+
 	val addCategoryCommand = Command(
 		"add-category",
 		categoryArg,
@@ -197,8 +199,54 @@ object ContextusCli:
 			)
 		})
 
+	import contextus.phobos.PhobosZIO.*
+
+	val newDocumentCommand = Command(
+		"new-document",
+		Args.text("title") ?? "Title of the new document"
+	).withHelp("Create a new document")
+		.map(title => handleError("Failed to make a new document", {
+			Title.parse(title) match
+				case Left(err) => ZIO.fail(DomainError.DecodingError(Right("title"), err, None))
+				case Right(_) =>
+					val titleForFilename = title.replaceAll("""[^\w\s]""", " ").trim.replaceAll("""\s+""", "-").toLowerCase
+					val filename = titleForFilename + ".xml"
+					val filePath = Path(filename)
+
+					val document = XmlContextusDoc(
+						title = Some(title),
+						alternateTitles = None,
+						author = Some("Author name goes here"),
+						publicationYear = Some(1999),
+						description = Some("Description goes here (or remove this tag)"),
+						shortDescription = Some("Short description goes here (or remove this tag)"),
+						category = Some("Parent Category / Child Category"),
+						schema = Some(Schema(List("Chapter", "Paragraph"))),
+						version = Some(Version(Some("Version title goes here"), Some("https://version.source.goes.here.org"), Some("en"))),
+						body = Some(Body(
+							List(
+								Section(None, Some("Chapter"), Nil, "chapter 1, paragraph 1\n, chapter 1, paragraph 2"),
+								Section(None, Some("Chapter"), Nil, "chapter 2, paragraph 1\n, chapter 2, paragraph 2"),
+							),
+							""
+						))
+					)
+
+					for
+						fileExists <- Files.exists(filePath)
+						_ <- ZIO.fail(IOError.FileIOError(filename, s"${filename} already exists!", None))
+							.when(fileExists)
+						documentString <- document.toXmlPrettyZIO
+							.mapError(ee => DomainError.IOError.FileIOError(filename, "Failed to encode document", Some(ee)))
+						_ <- Files.writeBytes(filePath, Chunk.fromArray(documentString.getBytes(StandardCharsets.UTF_8)))
+							.mapError(ioe => DomainError.IOError.FileIOError(filename, "Failed to write document", Some(ioe)))
+						_ <- Console.printLine(s"Created new document: ${filename}").orDie
+					yield ()
+		}))
+
 	val command = Command("contextus")
 		.subcommands(
+			newDocumentCommand,
 			submitDocCommand,
 			validateCommand,
 			indexCommand,
