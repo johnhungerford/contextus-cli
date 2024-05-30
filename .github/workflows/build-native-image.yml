@@ -8,7 +8,7 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: 'graalvm' # GraalVM version
-          java-version: '11'
+          java-version: '21'
           components: 'native-image'
       - uses: olafurpg/setup-scala@v11
         with:
