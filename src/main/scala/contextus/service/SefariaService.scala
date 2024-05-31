@@ -165,7 +165,33 @@ object SefariaService:
 							})
 				}
 
-		override def getIndexEntry(ref: SefariaRef): IO[Error, SefariaIndexEntry] = ???
+		override def getIndexEntry(ref: SefariaRef): IO[Error, SefariaIndexEntry] =
+			val refString = ref.refString
+			val url = indexUrl + "/" + refString
+			httpService.get(url)
+				.mapError {
+					case err: HttpIOError => err.copy(problem = s"Failed to retrieve index entry for $refString: ${err.problem}")
+					case err: DecodingError => err.copy(problem = s"Failed to retrieve index entry for $refString: ${err.problem}")
+				}
+				.flatMap {
+					case HttpService.Response(status, body) if status != 200 =>
+						body
+							.mapError {
+								case () => SefariaApiError(url, HttpMethod.Get, None, Some(status), None)
+								case err: Throwable => SefariaApiError(url, HttpMethod.Get, None, Some(status), Some(err))
+							}
+							.flatMap(msg => ZIO.fail(SefariaApiError(url, HttpMethod.Post, Some(msg), Some(status), None)))
+					case HttpService.Response(status, body) =>
+						body
+							.mapError {
+								case () => SefariaApiError(url, HttpMethod.Get, Some(s"missing body when attempting to retrieve index entry for $refString"), Some(status), None)
+								case err: Throwable => SefariaApiError(url, HttpMethod.Get, None, Some(status), Some(err))
+							}
+							.flatMap(msg => {
+								msg
+								  .decodeJsonZIO[SefariaIndexEntry]
+							})
+				}
 
 		override def updateCategories(update: SefariaCategoryUpdate): IO[Error, Unit] = indexCache.invalidating(()):
 			val baseErrorMessage = s"Failed to update category: ${update.encodeJson}"

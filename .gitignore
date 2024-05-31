@@ -7,3 +7,5 @@ contextus-*.zip
 .metals
 .bsp
 .vscode
+metals.sbt
+.bloop

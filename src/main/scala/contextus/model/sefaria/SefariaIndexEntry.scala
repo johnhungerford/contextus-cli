@@ -72,11 +72,7 @@ object SefariaIndexEntry:
 					case Some(json) =>
 						Right(obj.remove(sectionsKey).add(schemaOrSectionsKey, Json.fromJsonObject(JsonObject("Right" -> Json.fromJsonObject(JsonObject("value" -> json))))))
 				case Some(json) =>
-					obj(sectionsKey) match
-						case None =>
-							Right(obj.remove(schemaKey).add(schemaOrSectionsKey, Json.fromJsonObject(JsonObject("Left" -> Json.fromJsonObject(JsonObject("value" -> json))))))
-						case Some(_) =>
-							Left(DecodingFailure("contains both schema and sections: must have one or the but not both", Nil))
+					Right(obj.remove(schemaKey).add(schemaOrSectionsKey, Json.fromJsonObject(JsonObject("Left" -> Json.fromJsonObject(JsonObject("value" -> json))))))
 		}
 
 final case class SefariaAuthor(

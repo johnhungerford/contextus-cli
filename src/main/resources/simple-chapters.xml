@@ -1,0 +1,27 @@
+<document>
+    <title>Title goes here</title>
+
+    <author>Author goes here</author>
+
+    <category>Parent Category / Child Category</category>
+
+    <schema paragraphBreak="multi-line-break">
+        <level>Chapter</level>
+        <level>Paragraph</level>
+    </schema>
+    
+    <version>
+        <title>Version title goes here</title>
+        <source>https://source.url.goes.here</source>
+    </version>
+    
+    <body>
+        <section level="Chapter">
+            Text goes here -- paragraphs should be separated by blank lines
+        </section>
+        <section level="Chapter">
+            Text goes here -- paragraphs should be separated by blank lines
+        </section>
+    </body>
+
+</document>

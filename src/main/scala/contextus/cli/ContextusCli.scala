@@ -19,6 +19,10 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.Locale.Category
 import scala.util.Try
+import contextus.phobos.PhobosZIO
+import contextus.model.sefaria.SefariaRef
+import contextus.model.xml.XmlContextusDocReverseConversion
+import scala.io.Source
 
 object ContextusCli:
 
@@ -201,11 +205,33 @@ object ContextusCli:
 
 	import contextus.phobos.PhobosZIO.*
 
+	sealed trait Template:
+		def resourcePath: String
+
+	object Template:
+		case object MultipleBooks extends Template { val resourcePath = "multiple-books.xml" }
+		case object NamedChapters extends Template { val resourcePath = "named-chapters.xml" }
+		case object Poem extends Template { val resourcePath = "poem.xml" }
+		case object SimpleChapters extends Template { val resourcePath = "simple-chapters.xml" }
+		case object SimpleParagraphs extends Template { val resourcePath = "simple-paragraphs.xml" }
+		case object Song extends Template { val resourcePath = "song.xml" }
+
+	val templateOption =
+		Options.enumeration[Template]("template")(
+			"complex-books" -> Template.MultipleBooks,
+			"complex-chapters" -> Template.NamedChapters,
+			"poem" -> Template.Poem,
+			"chapters" -> Template.SimpleChapters,
+			"paragraphs" -> Template.SimpleParagraphs,
+			"song" -> Template.Song,
+		).withDefault(Template.SimpleParagraphs)
+
 	val newDocumentCommand = Command(
 		"new-document",
-		Args.text("title") ?? "Title of the new document"
+		templateOption,
+		Args.text("title") ?? "Title of the new document",
 	).withHelp("Create a new document")
-		.map(title => handleError("Failed to make a new document", {
+		.map((template, title) => handleError("Failed to make a new document", {
 			Title.parse(title) match
 				case Left(err) => ZIO.fail(DomainError.DecodingError(Right("title"), err, None))
 				case Right(_) =>
@@ -213,30 +239,16 @@ object ContextusCli:
 					val filename = titleForFilename + ".xml"
 					val filePath = Path(filename)
 
-					val document = XmlContextusDoc(
-						title = Some(title),
-						alternateTitles = None,
-						author = Some("Author name goes here"),
-						publicationYear = Some(1999),
-						description = Some("Description goes here (or remove this tag)"),
-						shortDescription = Some("Short description goes here (or remove this tag)"),
-						category = Some("Parent Category / Child Category"),
-						schema = Some(Schema(List("Chapter", "Paragraph"))),
-						version = Some(Version(Some("Version title goes here"), Some("https://version.source.goes.here.org"), Some("en"))),
-						body = Some(Body(
-							List(
-								Section(None, Some("Chapter"), Nil, "chapter 1, paragraph 1\n, chapter 1, paragraph 2"),
-								Section(None, Some("Chapter"), Nil, "chapter 2, paragraph 1\n, chapter 2, paragraph 2"),
-							),
-							""
-						))
-					)
-
 					for
+						templateString <- ZIO.attempt(Source.fromResource(template.resourcePath)
+							.getLines.mkString("\n"))
+							.mapError(ee => DomainError.IOError.FileIOError(template.resourcePath, "Failed to read template", Some(ee)))
+						templateDoc <- templateString.decodeXmlZIO[XmlContextusDoc]
+						updatedTemplateDoc = templateDoc.copy(title = Some(title))
 						fileExists <- Files.exists(filePath)
 						_ <- ZIO.fail(IOError.FileIOError(filename, s"${filename} already exists!", None))
 							.when(fileExists)
-						documentString <- document.toXmlPrettyZIO
+						documentString <- updatedTemplateDoc.toXmlPrettyZIO
 							.mapError(ee => DomainError.IOError.FileIOError(filename, "Failed to encode document", Some(ee)))
 						_ <- Files.writeBytes(filePath, Chunk.fromArray(documentString.getBytes(StandardCharsets.UTF_8)))
 							.mapError(ioe => DomainError.IOError.FileIOError(filename, "Failed to write document", Some(ioe)))
@@ -244,13 +256,64 @@ object ContextusCli:
 					yield ()
 		}))
 
+
+	val versionOption = Options.text("version") ?? "Name of the new version"
+	val sourceOption = Options.text("source").optional ?? "URL of the new version's source"
+	val fromOption = Options.file("from-file", Exists.Yes).map(Left.apply).??("File to make a new version of") orElse Options.text("from-contextus").map(Right.apply).??("Title of document in contextus")
+
+	val newVersionCommand = Command(
+		"new-version",
+		versionOption ++ sourceOption ++ fromOption,
+	).withHelp("Create a new version of an existing document (creates a new XML document)")
+		.map((versionTitle, versionSourceOpt, fromEither) => handleError("Failed to make a new document", {
+			val versionSource = versionSourceOpt.getOrElse("SOURCE URL SHOULD GO HEAR")
+			val version = Version(Some(versionTitle), Some(versionSource), None)
+			val getExistingDocument = fromEither match
+				case Left(file) =>
+					val filePath = Path.fromJava(file)
+					for 
+						fileString <- Files
+							.readAllBytes(filePath)
+							.map(v => String(v.toArray, StandardCharsets.UTF_8))
+							.mapError(ioe => DomainError.IOError.FileIOError(file.toString, "Failed to write document", Some(ioe)))
+						xmlDoc <- fileString.decodeXmlZIO[XmlContextusDoc]
+					yield
+						xmlDoc.copy(version = Some(version))
+
+				case Right(title) =>
+					for
+						sefariaService <- ZIO.service[SefariaService]
+						entry <- sefariaService.getIndexEntry(SefariaRef(title))
+						xmlDoc = XmlContextusDocReverseConversion.fromSefariaIndexEntry(entry, Some(version))
+					yield
+						xmlDoc
+
+			val versionTitleForFilename = versionTitle.replaceAll("""[^\w\s]""", " ").trim.replaceAll("""\s+""", "-").toLowerCase
+
+			for 
+				xmlDoc <- getExistingDocument
+				titleForFilename = xmlDoc.title.map(_.replaceAll("""[^\w\s]""", " ").trim.replaceAll("""\s+""", "-").toLowerCase + "-").getOrElse("")
+				filename = titleForFilename + versionTitleForFilename + ".xml"
+				filePath = Path(filename)
+				fileExists <- Files.exists(filePath)
+				_ <- ZIO.fail(IOError.FileIOError(filename, s"${filename} already exists!", None))
+					.when(fileExists)
+				documentString <- xmlDoc.toXmlPrettyZIO
+					.mapError(ee => DomainError.IOError.FileIOError(filename, "Failed to encode document", Some(ee)))
+				_ <- Files.writeBytes(filePath, Chunk.fromArray(documentString.getBytes(StandardCharsets.UTF_8)))
+					.mapError(ioe => DomainError.IOError.FileIOError(filename, "Failed to write document", Some(ioe)))
+				_ <- Console.printLine(s"Created new document: ${filename}").orDie
+			yield ()
+	}))
+
 	val command = Command("contextus")
 		.subcommands(
-			newDocumentCommand,
 			submitDocCommand,
 			validateCommand,
 			indexCommand,
 			addTextCommand,
+			newDocumentCommand,
+			newVersionCommand,
 			listCategoriesCommand,
 			addCategoryCommand,
 			ConfigCommands.rootCommand,
