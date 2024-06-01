@@ -58,12 +58,15 @@ lazy val root = (project in file("."))
       nativeImageOptions ++= Seq(
           // Don't generate JVM version if compilation fails
           "--no-fallback",
-          // Support Java native interface (lmdb, rocks, and netty)
-//          "-H:+JNI",
           "--enable-url-protocols=http",
           "--install-exit-handlers",
           "--enable-http",
-//          "--target=osx-amd64",
+          "-H:IncludeResources=\"\\Qsong.xml\\E\"",
+          "-H:IncludeResources=\"\\Qsimple-paragraphs.xml\\E\"",
+          "-H:IncludeResources=\"\\Qsimple-chapters.xml\\E\"",
+          "-H:IncludeResources=\"\\Qpoem.xml\\E\"",
+          "-H:IncludeResources=\"\\Qnamed-chapters.xml\\E\"",
+          "-H:IncludeResources=\"\\Qmultiple-book.xml\\E\""
       ),
       nativeImageInstalled      := true,
       Compile / mainClass       := Some("Main"),

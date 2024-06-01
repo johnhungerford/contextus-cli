@@ -23,6 +23,7 @@ import contextus.phobos.PhobosZIO
 import contextus.model.sefaria.SefariaRef
 import contextus.model.xml.XmlContextusDocReverseConversion
 import scala.io.Source
+import contextus.model.xml.Template
 
 object ContextusCli:
 
@@ -205,17 +206,6 @@ object ContextusCli:
 
 	import contextus.phobos.PhobosZIO.*
 
-	sealed trait Template:
-		def resourcePath: String
-
-	object Template:
-		case object MultipleBooks extends Template { val resourcePath = "multiple-books.xml" }
-		case object NamedChapters extends Template { val resourcePath = "named-chapters.xml" }
-		case object Poem extends Template { val resourcePath = "poem.xml" }
-		case object SimpleChapters extends Template { val resourcePath = "simple-chapters.xml" }
-		case object SimpleParagraphs extends Template { val resourcePath = "simple-paragraphs.xml" }
-		case object Song extends Template { val resourcePath = "song.xml" }
-
 	val templateOption =
 		Options.enumeration[Template]("template")(
 			"complex-books" -> Template.MultipleBooks,
@@ -240,16 +230,12 @@ object ContextusCli:
 					val filePath = Path(filename)
 
 					for
-						templateString <- ZIO.attempt(Source.fromResource(template.resourcePath)
-							.getLines.mkString("\n"))
-							.mapError(ee => DomainError.IOError.FileIOError(template.resourcePath, "Failed to read template", Some(ee)))
-						templateDoc <- templateString.decodeXmlZIO[XmlContextusDoc]
-						updatedTemplateDoc = templateDoc.copy(title = Some(title))
+						parsedTitle <- ZIO.fromEither(Title.parse(title))
+							.mapError(str => DomainError.DecodingError(Right("Title"), str, None))
+						documentString = template.doc(parsedTitle, None)
 						fileExists <- Files.exists(filePath)
 						_ <- ZIO.fail(IOError.FileIOError(filename, s"${filename} already exists!", None))
 							.when(fileExists)
-						documentString <- updatedTemplateDoc.toXmlPrettyZIO
-							.mapError(ee => DomainError.IOError.FileIOError(filename, "Failed to encode document", Some(ee)))
 						_ <- Files.writeBytes(filePath, Chunk.fromArray(documentString.getBytes(StandardCharsets.UTF_8)))
 							.mapError(ioe => DomainError.IOError.FileIOError(filename, "Failed to write document", Some(ioe)))
 						_ <- Console.printLine(s"Created new document: ${filename}").orDie
