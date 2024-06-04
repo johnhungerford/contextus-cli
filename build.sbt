@@ -61,12 +61,6 @@ lazy val root = (project in file("."))
           "--enable-url-protocols=http",
           "--install-exit-handlers",
           "--enable-http",
-          "-H:IncludeResources=\"\\Qsong.xml\\E\"",
-          "-H:IncludeResources=\"\\Qsimple-paragraphs.xml\\E\"",
-          "-H:IncludeResources=\"\\Qsimple-chapters.xml\\E\"",
-          "-H:IncludeResources=\"\\Qpoem.xml\\E\"",
-          "-H:IncludeResources=\"\\Qnamed-chapters.xml\\E\"",
-          "-H:IncludeResources=\"\\Qmultiple-book.xml\\E\""
       ),
       nativeImageInstalled      := true,
       Compile / mainClass       := Some("Main"),
