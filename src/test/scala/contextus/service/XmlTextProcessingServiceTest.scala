@@ -9,7 +9,7 @@ object XmlTextProcessingServiceTest extends ZIOSpecDefault:
 
 	override def spec = suite("XmlTextProcessingService")(
 		test("should encode and decode simple tags") {
-			val text = "asdfasd <b>asdfa <em>sdf</em> asdf</b>"
+			val text = "asdfasd <b>asdfa <em>sdf</em> asdf</b> alskdjfalsdkjf <sup>superscript</sup> asdfasd <u>all of this is underlined, <sub>including this subscripted part</sub> and <del>including this part which is struck out</del></u>"
 			for
 				processingService <- ZIO.service[XmlTextProcessingService]
 				encodedText = processingService.processPreIngest(text)

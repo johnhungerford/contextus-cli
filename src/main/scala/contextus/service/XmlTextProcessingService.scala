@@ -14,7 +14,7 @@ object XmlTextProcessingService:
 	val live = ZLayer.succeed[XmlTextProcessingService](Live)
 
 	object Live extends XmlTextProcessingService:
-		val tags = Set("em", "b", "note")
+		val tags = Set("em", "b", "sup", "sub", "del", "u", "note")
 		val tagsWithoutNote = tags - "note"
 
 		private val openXmlPattern = s"""<((?:${tagsWithoutNote.mkString("|")})(?:\\s+.*?)?)>""".r
