@@ -116,7 +116,7 @@ object SefariaService:
 			val refPath = refToPath(refString)
 			val url = textUrl + "/" + refPath + "?skip_links=True&count_after=1"
 			
-			val baseErrorMessage = s"Failed add text to $refString"
+			val baseErrorMessage = s"Failed to add add text to $refString"
 
 			httpService
 				.postForm(url, formData(submission))

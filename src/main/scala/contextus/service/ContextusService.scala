@@ -1,9 +1,11 @@
 package contextus.service
 
+import contextus.model.DomainError
 import contextus.model.contextus.ContextusDoc
 import zio.*
 import zio.stream.*
 import contextus.model.DomainError.*
+import contextus.model.DomainError.IOError.HttpIOError
 import contextus.model.contextus.ContextusDocConversion
 import contextus.model.sefaria.{SefariaRef, SefariaText, SefariaTextSubmission}
 import contextus.model.xml.XmlContextusDocConversion.CATEGORY_SEPARATOR
@@ -53,6 +55,15 @@ object ContextusService:
 							language = textSubmissionMap.language,
 						)
 						sefariaService.addText(ref, textSubmission)
+							.foldZIO[Any, HttpIOError | DecodingError, Unit](
+								{
+									case err: SefariaApiError =>
+										ZIO.debug(err)
+									case err: (HttpIOError | DecodingError) =>
+										ZIO.fail(err)
+								},
+								ZIO.succeed,
+							)
 				}
 			} yield ()
 

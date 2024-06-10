@@ -15,12 +15,15 @@ case class ContextusDoc(
 
 type Title = Title.Type
 object Title:
-	val Pattern = """[^:.\-\\/]{1,100}""".r
+	val Pattern = """[^:.\-\\/\n]{1,1000}""".r
 
 	opaque type Type <: String = String
 	def parse(value: String): Either[String, Title] =
-		if Pattern.matches(value) then Right(value)
-		else Left(s"Title cannot contain colons, periods, hyphens, or slashes")
+		val trimmed = value.replace('\n', ' ').trim
+		if """^\p{ASCII}*$""".r.findFirstIn(trimmed).isEmpty then
+			Left("Title must contain plain characters. Did you include non-English characters or curved quotes/apostrophes?")
+		else if Pattern.matches(trimmed) then Right(trimmed)
+		else Left(s"Title cannot contain colons, periods, hyphens, line breaks, or slashes")
 	def unsafeWrap(value: String): Title =
 		parse(value).left.foreach(v => s"INVALID TITLE: $v")
 		value
@@ -55,7 +58,7 @@ object ShortDescription:
 
 type Category = Category.Type
 object Category:
-	val Pattern = """[^.\-]{1,50}""".r
+	val Pattern = """[^.\-\n]{1,100}""".r
 
 	opaque type Type <: String = String
 	def parse(value: String): Either[String, Type] =

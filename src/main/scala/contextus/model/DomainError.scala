@@ -10,7 +10,7 @@ object DomainError:
 
 	enum HttpMethod:
 		case Get, Post, Put, Delete
-	
+
 	final case class SefariaApiError(
 		url: String,
 		method: HttpMethod,
