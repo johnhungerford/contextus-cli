@@ -304,6 +304,7 @@ object ContextusCli:
 			addCategoryCommand,
 			ConfigCommands.rootCommand,
 			FilesystemCommands.lsCommand,
+			TextCommands.fixTextCommand,
 		)
 	
 	private val printEmptyLine = Console.printLine("").orDie

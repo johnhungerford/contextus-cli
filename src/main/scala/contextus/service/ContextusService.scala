@@ -57,8 +57,11 @@ object ContextusService:
 						sefariaService.addText(ref, textSubmission)
 							.foldZIO[Any, HttpIOError | DecodingError, Unit](
 								{
+									case err: SefariaApiError if err.message.contains("Could not find title in reference") =>
+										ZIO.debug(s"Unable resolve ${ref.refString} to an indexed document. If you have already indexed ${document.title}, you may need wait as much as a day before being able to add all of its text.")
 									case err: SefariaApiError =>
-										ZIO.debug(err)
+										ZIO.debug(s"Failed to upload ${ref.refString}: ${err.message}")
+											*> ZIO.debug(s"${err.method}: ${err.url} (${err.status})")
 									case err: (HttpIOError | DecodingError) =>
 										ZIO.fail(err)
 								},
