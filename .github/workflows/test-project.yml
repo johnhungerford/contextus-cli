@@ -1,0 +1,16 @@
+name: Test Project
+on:
+  pull_request:
+    branches:
+      - master
+jobs:
+  test:
+    name: Test application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: olafurpg/setup-scala@v11
+        with:
+          java-version: amazon-corretto@1.17.0-0.35.1
+      - name: Automated tests
+        run: sbt test
