@@ -1,5 +1,8 @@
 name: GraalVM build
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - 'v*'
 jobs:
   build:
     name: Build contextus native image on ${{ matrix.os }}
