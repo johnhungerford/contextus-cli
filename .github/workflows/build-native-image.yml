@@ -29,6 +29,7 @@ jobs:
         run: sbt packageCli
       - name: Rename artifact
         run: for f in *.zip; do mv $f $(printf '%s\n' "${f%.zip}-${{ matrix.arch }}.zip"); done
-      - uses: kittaakos/upload-artifact-as-is@v0
+      - name: Upload artifact
+        uses: softprops/action-gh-release@v2
         with:
-          path: contextus-*.zip
+          files: contextus-*.zip
