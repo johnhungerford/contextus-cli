@@ -9,3 +9,5 @@ contextus-*.zip
 .vscode
 metals.sbt
 .bloop
+.DS_Store
+contextus-*.*.*

@@ -2,6 +2,9 @@ package contextus.util
 
 import contextus.model.xml.ParseIndent
 
+/**
+ * Removes indents when parsing text sections
+ */
 object HandleIndents {
 	def apply(text: String, indent: ParseIndent = ParseIndent.Auto): String = indent match
 		case ParseIndent.IgnoreIndent =>

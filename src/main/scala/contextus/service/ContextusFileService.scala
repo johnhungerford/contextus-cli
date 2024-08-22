@@ -12,6 +12,10 @@ import contextus.phobos.PhobosZIO.*
 
 import java.nio.charset.StandardCharsets
 
+
+/**
+ * Simple utility for file IO
+ */
 trait ContextusFileService:
 	def streamFromDirectory(directory: Path): ZStream[Any, ContextusFileService.Error, ContextusDoc]
 

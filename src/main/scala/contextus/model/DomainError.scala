@@ -3,7 +3,11 @@ package contextus.model
 import izumi.reflect.macrortti.LightTypeTag
 import zio.Tag
 
+/**
+ * All error types used by contextus-cli services
+ */
 object DomainError:
+
 	enum IOError:
 		case FileIOError(path: String, problem: String, underlying: Option[Throwable])
 		case HttpIOError(url: String, method: HttpMethod, problem: String, underlying: Option[Throwable])

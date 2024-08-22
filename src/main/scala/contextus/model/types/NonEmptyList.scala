@@ -14,7 +14,7 @@ object NonEmptyList:
 	def parse[T](list: List[T]): Either[String, NonEmptyList[T]] = list match
 		case head :: next => Right(apply(head, next))
 		case Nil => Left("NonEmptyList cannot be empty")
-		
+
 	extension [T] (nel: NonEmptyList[T]) 
 		def safeLast: T = nel.last
 

@@ -6,6 +6,9 @@ import zio.*
 import io.circe.*
 import io.circe.syntax.*
 
+/**
+ * Simple utility for http requests. Includes all functionality used by [[SefariaService]]
+ */
 trait HttpService:
 	import HttpService.{Response, Error}
 

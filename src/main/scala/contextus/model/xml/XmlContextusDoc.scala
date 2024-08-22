@@ -1,7 +1,5 @@
 package contextus.model.xml
 
-import contextus.validation.{Validation, ValidationErrorWithoutIdentifier}
-import contextus.model.DomainError.ValidationError
 import ru.tinkoff.phobos.syntax.*
 import ru.tinkoff.phobos.derivation.semiauto.*
 import ru.tinkoff.phobos.encoding.*
@@ -11,6 +9,11 @@ import contextus.service.XmlTextProcessingService
 import contextus.util.HandleIndents
 
 
+/**
+ * DAO for XML version of a contextus doc. Includes minimal validation at the type-level.
+ * [[XmlContextusDoc]] should be converted into a [[contextus.model.contextus.ContextusDoc]] 
+ * for validation.
+ */
 final case class XmlContextusDoc(
 	title: Option[String],
 	@renamed("alternateTitle") alternateTitles: Option[List[String]],

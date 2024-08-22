@@ -9,6 +9,11 @@ import contextus.model.sefaria.{SefariaCategory, SefariaCategoryUpdate, SefariaE
 import contextus.json.*
 
 
+/**
+ * Service for interacting with Sefaria. Supports all read/write functionality necessary for 
+ * submitting documents. As supports retrieving index entries, listing categories, and updating
+ * categories.
+ */
 trait SefariaService:
 	def addEntryToIndex(submission: SefariaIndexEntry): IO[SefariaService.Error, Unit]
 	def addText(ref: SefariaRef, submission: SefariaTextSubmission): IO[SefariaService.Error, Unit]

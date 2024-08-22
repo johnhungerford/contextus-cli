@@ -9,6 +9,10 @@ import java.io.FileNotFoundException
 import java.nio.charset.StandardCharsets
 import java.nio.file.NoSuchFileException
 
+/**
+ * Service to save and retrieve configuration information to/from a file. By default this will 
+ * be in the user's home directory: $HOME/.contextus/config.json
+ */
 trait ConfigurationService:
 	def setApiKey(key: String): ZIO[Any, ConfigurationService.Error, Unit]
 	def getApiKey: ZIO[Any, ConfigurationService.Error, Option[String]]

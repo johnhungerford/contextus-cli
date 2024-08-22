@@ -2,6 +2,10 @@ package contextus.model.sefaria
 
 import contextus.json.*
 
+/**
+ * Error messages returned (sometimes) by Sefaria
+ * @param error string message
+ */
 final case class SefariaError(
 	error: String
 )

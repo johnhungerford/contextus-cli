@@ -5,6 +5,12 @@ import zio.*
 import scala.util.Try
 import scala.xml.XML
 
+/**
+ * Service for processing text documents to allow functionality not currently 
+ * supported by [[ru.tinkoff.phobos]]. Primarily used to escape XML used in text 
+ * sections for formatting, and then unescaping them after converting to
+ * [[contextus.model.xml.XmlContextusDoc]]
+ */
 trait XmlTextProcessingService:
 	def processPreIngest(xmlText: String): String
 

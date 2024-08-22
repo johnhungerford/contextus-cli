@@ -7,6 +7,9 @@ trait Cache[A]:
 	def cached[K, R, E](key: K, timeout: Option[Duration] = None)(block: => ZIO[R, E, A]): ZIO[R, E, A]
 	def invalidating[K, R, E, T](key: K)(block: => ZIO[R, E, T]): ZIO[R, E, T]
 
+/**
+ * Simple cache used to optimize repeated requests (Sefaria requests can be slow...)
+ */
 trait CachingService:
 	def cache[A]: ZIO[Scope, DomainError.IOError, Cache[A]]
 

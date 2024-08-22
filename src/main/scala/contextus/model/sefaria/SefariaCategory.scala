@@ -2,6 +2,11 @@ package contextus.model.sefaria
 
 import scala.annotation.tailrec
 
+/**
+ * Represents a category in Sefaria. Note: not a DAO
+ * @param name category name
+ * @param categories child categories
+ */
 final case class SefariaCategory(
 	name: String,
 	categories: List[SefariaCategory]

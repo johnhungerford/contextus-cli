@@ -6,6 +6,9 @@ import ru.tinkoff.phobos.decoding.XmlDecoder
 import zio.*
 import ru.tinkoff.phobos.encoding.*
 
+/**
+ * Utility for decoding/encoding xml documents
+ */
 trait PhobosZIO:
 	extension (xmlDoc: String)
 		def decodeXml[A: XmlDecoder: Tag]: Either[DecodingError, A] =
@@ -28,4 +31,7 @@ trait PhobosZIO:
 		def toXmlZIO: IO[EncodingError, String] = ZIO.fromEither(xmlObject.toXml)
 		def toXmlPrettyZIO: IO[EncodingError, String] = ZIO.fromEither(xmlObject.toXmlPretty)
 
+/**
+ * Utility for decoding/encoding xml documents
+ */
 object PhobosZIO extends PhobosZIO		

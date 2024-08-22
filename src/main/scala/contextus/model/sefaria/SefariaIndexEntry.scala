@@ -6,6 +6,14 @@ import contextus.model.DomainError.DecodingError
 import io.circe.Decoder.Result
 import io.circe.{CursorOp, DecodingFailure, HCursor, JsonObject}
 
+
+/**
+ * Models the index entry for a Sefaria document. DAO for read/write to index endpoint.
+ * 
+ * Includes schema property [[schemaOrSections]] which can either be flat list of
+ * section types for a simple document, or a [[SefariaSchemaNode]] schema tree for 
+ * complex documents.
+ */
 case class SefariaIndexEntry(
 	title: String,
 	heTitle: String,

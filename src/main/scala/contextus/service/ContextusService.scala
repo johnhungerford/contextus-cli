@@ -9,8 +9,11 @@ import contextus.model.DomainError.IOError.HttpIOError
 import contextus.model.contextus.ContextusDocConversion
 import contextus.model.sefaria.{SefariaRef, SefariaText, SefariaTextSubmission}
 import contextus.model.xml.XmlContextusDocConversion.CATEGORY_SEPARATOR
-import contextus.validation.Validation
 
+/**
+ * Service for indexing and submitting [[ContextusDoc]]s. Basically a wrapper around 
+ * [[SefariaService]] that does necessary conversions.
+ */
 trait ContextusService:
 	import ContextusService.Error
 

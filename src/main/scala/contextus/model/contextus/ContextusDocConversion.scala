@@ -5,6 +5,15 @@ import contextus.model.sefaria.{SefariaAddressType, SefariaIndexEntry, SefariaRe
 import cats.syntax.all.*
 
 object ContextusDocConversion:
+	/**
+	 * Generates a [[SefariaIndexEntry]] from a [[ContextusDoc]] that can be used
+	 * to add an entry to the Contextus index (but not text)
+	 * 
+	 * @param document [[ContextusDoc]] from which to generate a [[SefariaIndexEntry]]
+	 * @return an index entry if conversion is successful, or an error message if unsuccessful.
+	 *         Since [[ContextusDoc]] is more precisely typed than [[SefariaIndexEntry]],
+	 *         this should never fail.
+	 */
 	def contextusDocToSefariaIndexEntry(
 		document: ContextusDoc,
 	): Either[String, SefariaIndexEntry] =
@@ -36,6 +45,13 @@ object ContextusDocConversion:
 				schemaOrSections = schemaOrSections,
 			)
 
+	/**
+	 * Generates a [[SefariaTextSubmissionMap]] from a [[ContextusDoc]] that can be used
+	 * to submit text for a document that has already been indexed.
+	 * 
+	 * @param document [[ContextusDoc]] document
+	 * @return [[SefariaTextSubmissionMap]] containing all text submissions
+	 */
 	def contextusDocToSefariaTextSubmissionMap(
 		document: ContextusDoc,
 	): SefariaTextSubmissionMap =

@@ -4,6 +4,11 @@ import contextus.json.*
 import io.circe.Decoder.Result
 import io.circe.{HCursor, Json}
 
+/**
+ * Represents Sefaria's JaggedArray. DAO for read/write text versions.
+ * 
+ * @param value list of text sections, each of which can be a string or a nested SefariaText
+ */
 final case class SefariaText(
 	value: List[String | SefariaText]
 )
@@ -29,6 +34,7 @@ object SefariaText:
 			}).map(list => SefariaText(list.reverse))
 
 /**
+ * DAO modeling a text submission request for Sefaria
  * {
  *   "versionTitle": "Sefaria Community Translation",
  * 	 "versionSource": "https://www.sefaria.org",

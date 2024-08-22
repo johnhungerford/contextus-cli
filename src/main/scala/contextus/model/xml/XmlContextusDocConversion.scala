@@ -5,6 +5,14 @@ import cats.syntax.all.*
 import contextus.model.types.NonEmptyList
 import contextus.service.XmlTextProcessingService
 
+/**
+ * Error message when conversion fails due to invalid data. Includes a location path to identify 
+ * which section in the document failed.
+ * 
+ * @param message error message
+ * @param location path to document location where failure occurred. Note path segments are expected 
+ *                 to be prepended, so lower index means deeper nesting
+ */
 final case class ConvError(message: String, location: List[String]):
 	def within(loc: List[String]): ConvError = copy(location = location ++ loc)
 	def within(loc: String): ConvError = within(loc :: Nil)
@@ -22,6 +30,12 @@ final case class XmlContextusDocConversion(textProcessingService: XmlTextProcess
 	import XmlContextusDocConversion.CATEGORY_SEPARATOR
 	import ConvError.{asErr, asErrLoc}
 
+	/**
+	 * Converts [[XmlContextusDoc]] in [[ContextusDoc]], failing with [[ConvError]] where invalid.
+	 * 
+	 * @param xmlDoc [[XmlContextusDoc]] to be converted
+	 * @return [[ContextusDoc]] if successful, [[ConvError]] if invalid XML document
+	 */
 	def convert(xmlDoc: XmlContextusDoc): Either[ConvError, ContextusDoc] = for {
 		titleStr <- xmlDoc.title.toRight("Missing required <title> tag".asErrLoc("<document>"))
 		title <- Title.parse(titleStr).left.map(_.asErrLoc("<title>", List("<document>")))

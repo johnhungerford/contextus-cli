@@ -2,6 +2,10 @@ package contextus.model.xml
 
 import contextus.model.contextus.Title
 
+
+/**
+ * Construct an XML Contextus doc (string, not model) given a title and version title
+ */
 trait Template:
     def doc(title: Title, versionTitle: Option[String]): String
 

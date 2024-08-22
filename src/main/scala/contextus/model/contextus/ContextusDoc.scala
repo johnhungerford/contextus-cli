@@ -2,6 +2,15 @@ package contextus.model.contextus
 
 import contextus.model.types.NonEmptyList
 
+/**
+ * Core model of a contextus document for the purposes of this application.
+ * Input document (XmlContextusDoc) should be converted to ContextusDoc,
+ * and then ContextusDoc can be converted to an output document (SefariaDoc)
+ * for submission.
+ * 
+ * Data validation (in the form of highly constrained types) should occur in this
+ * model, not in the input and output.
+ */
 case class ContextusDoc(
 	title: Title,
 	author: String,
@@ -78,36 +87,83 @@ object Year:
 		parse(value).left.foreach(v => s"INVALID YEAR: $v")
 		value
 
+/**
+ * Represents version of the document. Text and document are inseparable in this model. In 
+ * Sefaria they are separate.
+ * 
+ * @param title
+ * @param source
+ * @param language
+ */
 final case class DocVersion(
 	title: String,
 	source: String,
 	language: Option[String],
 )
 
+/**
+ * Represents a document that has a consistent section structure. Cannot be used 
+ * for documents that have individually titled sections or sections with different 
+ * section headers or depths.
+ * 
+ * @param levels schema for sections, e.g., List("Chapter", "Section", "Paragraph")
+ * @param sections simple document content in the form of a list of [[ContentSection]]
+ */
 final case class SimpleDocContent(
 	levels: NonEmptyList[String],
 	sections: NonEmptyList[ContentSection]
 )
 
+/**
+ * Represents a complex document that has inconsistent section structure. This means
+ * that a document either has sections with different depths or section headings, or 
+ * its section headings must be given explicitly (e.g., Chapter One: Yada yada yada, as 
+ * opposed to Chapter 1, Chapter 2...)
+ */
 sealed trait ComplexDocContent
+
 object ComplexDocContent:
+	/**
+	 * Sub-document that has actual content
+	 * 
+	 * @param title sub-document (or section) title
+	 * @param levels schema for sub-document, e.g., List("Chapter", "Section", "Paragraph")
+	 * @param sections: sub-document content in the form of a list of [[ContentSection]]
+	 */
 	final case class Content(
 		title: Title,
 		levels: NonEmptyList[String],
 		sections: NonEmptyList[ContentSection],
 	) extends ComplexDocContent
 
+	/**
+	 * Sub-document composed of other sub-documents.
+	 * 
+	 * @param title sub-document title
+	 * @param content nested [[ComplexDocContent]] sub-documents
+	 */
 	final case class ContentList(
 		title: String,
 		content: NonEmptyList[ComplexDocContent],
 	) extends ComplexDocContent
 
+/**
+ * Text content for a simple document or a simple sub-document
+ */
 sealed trait ContentSection
 object ContentSection:
+	/**
+	 * Simple text section
+	 * @param text text string
+	 */
 	final case class Text(
 		text: String,
 	) extends ContentSection
 
+	/**
+	 * Text section with nested sections
+	 * @param subSections inner sections
+	 */
 	final case class Nested(
 		subSections: NonEmptyList[ContentSection]
 	) extends ContentSection

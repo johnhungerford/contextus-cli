@@ -4,6 +4,11 @@ import contextus.model.types.NonEmptyList
 import contextus.json.*
 import contextus.model.contextus.ContextusDocConversion
 
+/**
+ * DAO for adding a category to Sefaria
+ * @param path path from root ancestor category to parent category
+ * @param titles name of category including both english and hebrew
+ */
 final case class SefariaCategoryUpdate(
 	path: List[String],
 	titles: List[SefariaTitle],

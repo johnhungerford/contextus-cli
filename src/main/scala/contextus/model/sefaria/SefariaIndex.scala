@@ -5,6 +5,11 @@ import contextus.json.*
 import scala.util.Random
 
 
+/**
+ * Models Sefaria's index tree. DAO for Sefaria index endpoint json response.
+ * 
+ * @param contents index tree in form of a list of [[SefariaIndexNode]] nodes
+ */
 final case class SefariaIndex(
 	contents: List[SefariaIndexNode]
 ):
