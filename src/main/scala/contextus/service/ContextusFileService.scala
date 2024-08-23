@@ -26,7 +26,7 @@ trait ContextusFileService:
 
 	def useTemporaryFiles[E, A](data: Chunk[(String, Chunk[Byte])], executable: Boolean = false)(usePaths: Chunk[Path] => IO[E, A]): IO[E | ContextusFileService.Error, A]
 
-	def runFile(path: Path): IO[ContextusFileService.Error, Unit]
+	def runScript(path: Path): IO[ContextusFileService.Error, Unit]
 
 object ContextusFileService:
 	type Error = DecodingError | IOError.FileIOError
@@ -107,13 +107,12 @@ object ContextusFileService:
 					result <- usePaths(paths)
 				yield result
 
-		def runFile(path: Path): IO[ContextusFileService.Error, Unit] =
+		def runScript(path: Path): IO[ContextusFileService.Error, Unit] =
 			val parent = path.parent
 			val relPath = parent.map(_.relativize(path)).getOrElse(path)
-			scala.sys.process.Process(s"cat ${relPath.toString}", path.parent.map(_.toFile)).!
 			ZIO.attempt(scala.sys.process.Process(s"zsh ${relPath.toString}", path.parent.map(_.toFile)).!)
-				.mapError(e => IOError.FileIOError(path.toString, "failed to run file", Some(e)): ContextusFileService.Error)
+				.mapError(e => IOError.FileIOError(path.toString, "Failed to run script", Some(e)): ContextusFileService.Error)
 				.flatMap:
 					case 0 => ZIO.unit
 					case other =>
-						ZIO.fail(IOError.FileIOError(path.toString, s"executing file failed with code $other", None))
+						ZIO.fail(IOError.FileIOError(path.toString, s"Script execution failed with code $other", None))

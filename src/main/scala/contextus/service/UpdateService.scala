@@ -64,20 +64,17 @@ object UpdateService:
         downloadUrl <- releaseData.getUrl(arch).fold(
           ZIO.fail(DomainError.ValidationError("release download url", Some(releaseJson), Some(s"Could not find release asset for ${arch} in release data"))),
         )(ZIO.succeed)
-        _ <- ZIO.debug(downloadUrl)
         tstRes <- httpService.get(downloadUrl)
-        _ <- ZIO.debug(tstRes.status)
         releaseAssetResponse <- httpService.getBinary(downloadUrl)
         _ <- ZIO.fail[DomainError.IOError.HttpIOError](DomainError.IOError.HttpIOError(downloadUrl, DomainError.HttpMethod.Get, s"Could not retrieve release payload: status ${releaseAssetResponse.status}", None))
           .when(releaseAssetResponse.status != 200)
         releaseAsset <- releaseAssetResponse.body.mapError[DomainError.IOError.HttpIOError](e => DomainError.IOError.HttpIOError(versionUrl, DomainError.HttpMethod.Get, s"Could not parse body", None))
         data <- ZipUtil.unzip(releaseAsset.toArray).runCollect
         _ <- fileService.useTemporaryFiles(data, true) { paths =>
-          scala.sys.process.Process("ls", paths.headOption.flatMap(_.parent.map(_.toFile))).!
-          ZIO.debug(paths.mkString(", ")) *> ZIO.debug(paths.length) *> (paths.find(_.filename.toString == "install.command") match {
-            case Some(path) =>  fileService.runFile(path)
+           paths.find(_.filename.toString == "install.command") match {
+            case Some(path) =>  fileService.runScript(path)
             case None => ZIO.fail[Error](ValidationError("release archive", None, Some("install.command does not exist in release archive")))
-          })
+          }
         }
       yield ()
 

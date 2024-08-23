@@ -107,7 +107,6 @@ object HttpService:
 				response <- backend
 				  .send(request)
 				  .mapError[HttpIOError](err => HttpIOError(uri.toString, HttpMethod.Get, err.getMessage, Some(err)))
-				_ <- ZIO.debug(response.headers)
 				status = response.code.code
 				body = ZIO.attempt(response.body.fold(s => Chunk.fromArray(s.getBytes("UTF-8")), identity))
 			} yield BinaryResponse(status, body)
