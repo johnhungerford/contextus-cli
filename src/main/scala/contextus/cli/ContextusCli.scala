@@ -313,6 +313,19 @@ object ContextusCli:
 			()
 	}
 
+	val docCommand = Command("docs")
+		.withHelp("Open documentation")
+		.map { _ =>
+			for
+				configService <- ZIO.service[ConfigurationService]
+				contextusPath <- configService.contextusPath
+				docPath = contextusPath / "documentation.pdf"
+				_ <- ZIO.attempt(scala.sys.process.Process(s"open -a Preview ${docPath.toString}").!)
+					.mapError(e => DomainError.IOError.FileIOError(docPath.toString, "Unable to preview documentation", Some(e)))
+			yield
+				()
+		}
+
 	val command = Command("contextus")
 		.subcommands(
 			submitDocCommand,
@@ -326,6 +339,7 @@ object ContextusCli:
 			FilesystemCommands.lsCommand,
 			TextCommands.fixTextCommand,
 			ConfigCommands.rootCommand,
+			docCommand,
 			updateCommand,
 		)
 	

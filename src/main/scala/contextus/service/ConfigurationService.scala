@@ -4,6 +4,7 @@ import zio.*
 import zio.nio.file.*
 import contextus.json.*
 import contextus.model.DomainError
+import contextus.model.DomainError.IOError
 import contextus.service.UpdateService.Arch
 
 import java.io.FileNotFoundException
@@ -23,6 +24,8 @@ trait ConfigurationService:
 
 	def setArch(arch: Arch): ZIO[Any, ConfigurationService.Error, Unit]
 	def getArch: ZIO[Any, ConfigurationService.Error, Option[Arch]]
+	
+	def contextusPath: ZIO[Any, ConfigurationService.Error, Path]
 
 object ConfigurationService:
 	val live = ZLayer.succeed[ConfigurationService](Live)
@@ -60,7 +63,7 @@ object ConfigurationService:
 						case Some(value) => ZIO.succeed(Path(value))
 					}
 				)
-		private val contextusPath = homePath.map(_ / ".contextus")
+		override val contextusPath: ZIO[Any, IOError.FileIOError, Path] = homePath.map(_ / ".contextus")
 		private val configPath = contextusPath.map(_ / "config.json")
 		private val getConf: ZIO[Any, DomainError.IOError.FileIOError, Conf] = (for {
 			confPath <- configPath
