@@ -25,7 +25,7 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: 'graalvm' # GraalVM version
-          java-version: '21'
+          java-version: '17'
           components: 'native-image'
       - name: Build and package
         run: sbt packageCli
@@ -35,3 +35,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: contextus-*.zip
+          generate_release_notes: true

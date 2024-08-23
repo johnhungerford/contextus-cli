@@ -1,6 +1,6 @@
 package contextus.cli
 
-import contextus.service.{ContextusFileService, ContextusService, SefariaService}
+import contextus.service.{ConfigurationService, ContextusFileService, ContextusService, SefariaService, UpdateService}
 import zio.*
 import zio.stream.*
 import zio.cli.*
@@ -22,6 +22,7 @@ import scala.util.Try
 import contextus.phobos.PhobosZIO
 import contextus.model.sefaria.SefariaRef
 import contextus.model.xml.XmlContextusDocReverseConversion
+
 import scala.io.Source
 import contextus.model.xml.Template
 
@@ -292,6 +293,25 @@ object ContextusCli:
 			yield ()
 	}))
 
+	val updateCommand = Command(
+		"update",
+		Args.text("version").between(0, 1).map(_.headOption).??("contextus-cli version install (default latest)"),
+	).map { version =>
+		for
+			configService <- ZIO.service[ConfigurationService]
+			arch <- configService.getArch.flatMap {
+				case None => ZIO.fail(DomainError.ConfigError.MissingValue("arch", "Provide an architecture using config arch --set [x64|arm] to update."))
+				case Some(arch) => ZIO.succeed(arch)
+			}
+			updateService <- ZIO.service[UpdateService]
+			_ <- version match {
+				case None => updateService.updateLatest(arch)
+				case Some(v) => updateService.update(v, arch)
+			}
+		yield
+			()
+	}
+
 	val command = Command("contextus")
 		.subcommands(
 			submitDocCommand,
@@ -302,6 +322,7 @@ object ContextusCli:
 			newVersionCommand,
 			listCategoriesCommand,
 			addCategoryCommand,
+			updateCommand,
 			ConfigCommands.rootCommand,
 			FilesystemCommands.lsCommand,
 			TextCommands.fixTextCommand,

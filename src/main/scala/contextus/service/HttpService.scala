@@ -2,6 +2,7 @@ package contextus.service
 
 import contextus.model.DomainError.{DecodingError, HttpMethod}
 import contextus.model.DomainError.IOError.HttpIOError
+import contextus.service.HttpService.BinaryResponse
 import zio.*
 import io.circe.*
 import io.circe.syntax.*
@@ -21,6 +22,8 @@ trait HttpService:
 		postJsonText(url, dataStr)
 
 	def get(url: String): IO[Error, Response]
+
+	def getBinary(url: String): IO[Error, BinaryResponse]
 	
 	def delete(url: String): IO[Error, Response]
 
@@ -31,6 +34,7 @@ object HttpService:
 	type Error = HttpIOError | DecodingError
 
 	final case class Response(status: Int, body: IO[Throwable | Unit, String])
+	final case class BinaryResponse(status: Int, body: IO[Throwable | Unit, Chunk[Byte]])
 
 	val live: ZLayer[SttpBackend[Task, Any], Nothing, HttpService] =
 		ZLayer.fromFunction(Live.apply)
@@ -90,6 +94,22 @@ object HttpService:
 				status = response.code.code
 				body = ZIO.attempt(response.body.fold(identity, identity))
 			} yield Response(status, body)
+
+		override def getBinary(url: String): IO[Error, BinaryResponse] =
+			for {
+				uri <- ZIO
+				  .fromEither(Uri.parse(url))
+				  .mapError(msg => DecodingError(Left(Tag[Uri].tag), msg, None))
+				request = basicRequest
+					.get(uri)
+					.response(asByteArray)
+					.mapResponseRight(Chunk.fromArray)
+				response <- backend
+				  .send(request)
+				  .mapError[HttpIOError](err => HttpIOError(uri.toString, HttpMethod.Get, err.getMessage, Some(err)))
+				status = response.code.code
+				body = ZIO.attempt(response.body.fold(s => Chunk.fromArray(s.getBytes("UTF-8")), identity))
+			} yield BinaryResponse(status, body)
 
 		override def delete(url: String): IO[Error, Response] =
 			for {
