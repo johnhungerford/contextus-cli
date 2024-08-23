@@ -295,8 +295,8 @@ object ContextusCli:
 
 	val updateCommand = Command(
 		"update",
-		Args.text("version").between(0, 1).map(_.headOption).??("contextus-cli version install (default latest)"),
-	).map { version =>
+		Args.text("version").between(0, 1).map(_.headOption).??("contextus-cli version to install (default latest)"),
+	).withHelp("Upgrade contextus-cli").map { version =>
 		for
 			configService <- ZIO.service[ConfigurationService]
 			arch <- configService.getArch.flatMap {
@@ -323,10 +323,10 @@ object ContextusCli:
 			newVersionCommand,
 			listCategoriesCommand,
 			addCategoryCommand,
-			updateCommand,
-			ConfigCommands.rootCommand,
 			FilesystemCommands.lsCommand,
 			TextCommands.fixTextCommand,
+			ConfigCommands.rootCommand,
+			updateCommand,
 		)
 	
 	private val printEmptyLine = Console.printLine("").orDie

@@ -61,4 +61,4 @@ object ConfigCommands:
 				Console.printLine("Encountered unexpected error opening the configuration file. Contact your maintainer.")
 		})
 
-	val rootCommand = Command("config").subcommands(apiKeyCommand, archCommand)
+	val rootCommand = Command("config").withHelp("Commands for setting configuration").subcommands(apiKeyCommand, archCommand)

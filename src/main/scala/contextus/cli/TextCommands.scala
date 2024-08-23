@@ -46,7 +46,7 @@ object TextCommands:
 		"fix-text",
 		repairSplitLinesOpt ++ removePageNumbersOpt,
 		Args.file("text-file") ++ Args.file("output-file").atMost(1).map(_.headOption),
-	).map { case ((repairSplitLines, removePageNumbers), (textFile, outFileOpt)) =>
+	).withHelp("Utilities for cleaning up text including repairing split words and removing page numbers").map { case ((repairSplitLines, removePageNumbers), (textFile, outFileOpt)) =>
 		val textPath = Path.fromJava(textFile)
 		val outPath = outFileOpt.fold(textPath)(Path.fromJava)
 		val effect = for
