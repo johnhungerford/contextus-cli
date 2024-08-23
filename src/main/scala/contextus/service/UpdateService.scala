@@ -10,8 +10,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.attribute.PosixFilePermission
 
 trait UpdateService:
-  def update(version: String, arch: UpdateService.Arch): IO[UpdateService.Error, Unit]
-  def updateLatest(arch: UpdateService.Arch): IO[UpdateService.Error, Unit]
+  def update(version: String, arch: UpdateService.Arch): IO[UpdateService.Error, String]
+  def updateLatest(arch: UpdateService.Arch): IO[UpdateService.Error, String]
 
 object UpdateService:
   type Error = HttpService.Error | DomainError.ValidationError | ContextusFileService.Error
@@ -37,6 +37,7 @@ object UpdateService:
 
   final case class Release(
     assets: List[Release.Asset],
+    name: String,
   ):
     def getUrl(arch: Arch): Option[String] =
       assets.find(_.name.contains(arch.text))
@@ -53,7 +54,7 @@ object UpdateService:
     httpService: HttpService,
     fileService: ContextusFileService,
   ) extends UpdateService:
-    private def updateImpl(version: Option[String], arch: Arch): IO[Error, Unit] =
+    private def updateImpl(version: Option[String], arch: Arch): IO[Error, String] =
       for
         versionUrl <- getVersionUrl(version)
         releaseResponse <- httpService.get(versionUrl)
@@ -76,10 +77,10 @@ object UpdateService:
             case None => ZIO.fail[Error](ValidationError("release archive", None, Some("install.command does not exist in release archive")))
           }
         }
-      yield ()
+      yield releaseData.name
 
-    override def updateLatest(arch: Arch): IO[Error, Unit] = updateImpl(None, arch)
-    override def update(version: String, arch: Arch): IO[Error, Unit] = updateImpl(Some(version), arch)
+    override def updateLatest(arch: Arch): IO[Error, String] = updateImpl(None, arch)
+    override def update(version: String, arch: Arch): IO[Error, String] = updateImpl(Some(version), arch)
 
     def getVersionUrl(version: Option[String]): IO[DomainError.ValidationError, String] =
       val VersionPattern = """v?(\d+.\d+.\d+)""".r

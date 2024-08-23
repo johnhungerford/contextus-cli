@@ -304,10 +304,11 @@ object ContextusCli:
 				case Some(arch) => ZIO.succeed(arch)
 			}
 			updateService <- ZIO.service[UpdateService]
-			_ <- version match {
+			versionString <- version match {
 				case None => updateService.updateLatest(arch)
 				case Some(v) => updateService.update(v, arch)
 			}
+			_ <- Console.printLine(s"\n  ** Updated contextus-cli to $versionString **\n")
 		yield
 			()
 	}
