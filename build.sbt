@@ -56,7 +56,7 @@ lazy val root = (project in file("."))
       name := "contextus-cli",
       commonSettings,
       packageSettings,
-      arch := "arm",
+      arch := "arm64",
       buildInfoKeys := Seq[BuildInfoKey](version, arch),
       buildInfoPackage := "contextus.buildinfo",
       Universal / packageName   := "contextus-cli",

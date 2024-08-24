@@ -23,14 +23,14 @@ object UpdateService:
 
     def text: String = this match
       case Arch.X64 => "x64"
-      case Arch.ARM => "arm"
+      case Arch.ARM => "arm64"
 
   object Arch:
     def parse(archString: String): Either[String, Arch] =
       archString.trim.toLowerCase match
         case "x64" => Right(Arch.X64)
-        case "arm" => Right(Arch.ARM)
-        case invalid => Left(s"Unsupported architecture type $invalid. Supported architectures are x64 and ARM")
+        case "arm64" => Right(Arch.ARM)
+        case invalid => Left(s"Unsupported architecture type $invalid. Supported architectures are x64 and arm64")
 
     given Encoder[Arch] = Encoder.encodeString.contramap((a: Arch) => a.text)
     given Decoder[Arch] = Decoder.decodeString.emap(parse)
