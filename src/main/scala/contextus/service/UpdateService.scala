@@ -88,7 +88,7 @@ object UpdateService:
       val versionSegment = version match
         case None => ZIO.succeed("latest")
         case Some("") => ZIO.fail(DomainError.ValidationError("version", Some(""), Some("empty version")))
-        case Some(VersionPattern(v)) => ZIO.succeed(s"v$v")
+        case Some(VersionPattern(v)) => ZIO.succeed(s"tags/v$v")
         case Some(other) => ZIO.fail(DomainError.ValidationError("version", Some(other), Some("version must have form: v#.#.# or just #.#.#")))
 
       versionSegment.map(vs => s"https://api.github.com/repos/johnhungerford/contextus-cli/releases/$vs")

@@ -299,10 +299,7 @@ object ContextusCli:
 	).withHelp("Upgrade contextus-cli").map { version =>
 		for
 			configService <- ZIO.service[ConfigurationService]
-			arch <- configService.getArch.flatMap {
-				case None => ZIO.fail(DomainError.ConfigError.MissingValue("arch", "Provide an architecture using config arch --set [x64|arm] to update."))
-				case Some(arch) => ZIO.succeed(arch)
-			}
+			arch <- configService.getArch
 			updateService <- ZIO.service[UpdateService]
 			versionString <- version match {
 				case None => updateService.updateLatest(arch)
@@ -326,6 +323,9 @@ object ContextusCli:
 				()
 		}
 
+	val versionCommand = Command("version").withHelp("Display version")
+		.map(_ => Console.printLine(s"Version ${contextus.buildinfo.BuildInfo.version}").orDie)
+
 	val command = Command("contextus")
 		.subcommands(
 			submitDocCommand,
@@ -341,8 +341,9 @@ object ContextusCli:
 			ConfigCommands.rootCommand,
 			docCommand,
 			updateCommand,
+			versionCommand,
 		)
-	
+
 	private val printEmptyLine = Console.printLine("").orDie
 
 	def printUnderlyingError(thr: Throwable): UIO[Unit] =
@@ -351,9 +352,9 @@ object ContextusCli:
 
 	val app = CliApp.make(
 		name = "Contextus",
-		version = "0.1.0",
+		version = contextus.buildinfo.BuildInfo.version,
 		summary = text("Utilities for adding and updating documents in Contextus"),
-		command = command
+		command = command,
 	):
 		effect => printEmptyLine *> effect
 
