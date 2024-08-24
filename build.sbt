@@ -44,17 +44,22 @@ lazy val packageSettings = Seq(
     assembly / test                  := {},
 )
 
+val arch = settingKey[String]("Architecture")
+
 lazy val disablePackaging = Seq()
 
 val packageCli = taskKey[Unit]("Package Contextus CLI")
 
 lazy val root = (project in file("."))
-  .enablePlugins(JavaAppPackaging, UniversalPlugin, NativeImagePlugin)
+  .enablePlugins(JavaAppPackaging, UniversalPlugin, NativeImagePlugin, BuildInfoPlugin)
   .settings(
       name := "contextus-cli",
       commonSettings,
       packageSettings,
-      Universal / packageName   := "gsp-cli",
+      arch := "arm",
+      buildInfoKeys := Seq[BuildInfoKey](version, arch),
+      buildInfoPackage := "contextus.buildinfo",
+      Universal / packageName   := "contextus-cli",
       nativeImageOptions ++= Seq(
           // Don't generate JVM version if compilation fails
           "--no-fallback",
@@ -68,15 +73,18 @@ lazy val root = (project in file("."))
       packageCli := {
           val packageFile = baseDirectory.value / "package"
           val nativeImageFile = nativeImage.value
-          println(nativeImageFile.getAbsolutePath)
-//          nativeImageFile
+
+          arch.value
+
           java.nio.file.Files.copy(
               nativeImageFile.toPath,
               (packageFile / nativeImageFile.getName).toPath,
               StandardCopyOption.REPLACE_EXISTING,
           )
+
           val zippedPackageFileName = s"contextus-${version.value}.zip"
           val zippedPackageFile = baseDirectory.value / zippedPackageFileName
+
           Process("zip" :: "-r" :: zippedPackageFile.getAbsolutePath :: "." :: Nil, Some(packageFile)).!
       }
   )

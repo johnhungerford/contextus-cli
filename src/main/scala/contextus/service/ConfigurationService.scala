@@ -5,11 +5,13 @@ import zio.nio.file.*
 import contextus.json.*
 import contextus.model.DomainError
 import contextus.model.DomainError.IOError
+import contextus.model.DomainError.IOError.FileIOError
 import contextus.service.UpdateService.Arch
 
 import java.io.FileNotFoundException
 import java.nio.charset.StandardCharsets
 import java.nio.file.NoSuchFileException
+import scala.io.Source
 
 /**
  * Service to save and retrieve configuration information to/from a file. By default this will
@@ -22,8 +24,7 @@ trait ConfigurationService:
 	def setBaseUrl(url: String): ZIO[Any, ConfigurationService.Error, Unit]
 	def getBaseUrl: ZIO[Any, ConfigurationService.Error, String]
 
-	def setArch(arch: Arch): ZIO[Any, ConfigurationService.Error, Unit]
-	def getArch: ZIO[Any, ConfigurationService.Error, Option[Arch]]
+	def getArch: ZIO[Any, ConfigurationService.Error, Arch]
 	
 	def contextusPath: ZIO[Any, ConfigurationService.Error, Path]
 
@@ -35,11 +36,10 @@ object ConfigurationService:
 	final case class Conf(
 		apiKey: Option[String],
 		baseUrl: String,
-		arch: Option[Arch],
 	)
 
 	object Conf:
-		val default = Conf(apiKey = None, baseUrl = "http://contextus.org", arch = None)
+		val default = Conf(apiKey = None, baseUrl = "http://contextus.org")
 
 		given Encoder[Conf] = deriveEncoder
 		given Decoder[Conf] = deriveDecoder
@@ -114,7 +114,11 @@ object ConfigurationService:
 		override def getBaseUrl: ZIO[Any, Error, String] =
 			getConf.map(_.baseUrl)
 
-		override def setArch(arch: Arch): ZIO[Any, ConfigurationService.Error, Unit] =
-			updateConf(_.copy(arch = Some(arch)))
-		override def getArch: ZIO[Any, ConfigurationService.Error, Option[Arch]] =
-			getConf.map(_.arch)
+		override def getArch: ZIO[Any, ConfigurationService.Error, Arch] =
+			for
+				archStr <- ZIO.attempt(contextus.buildinfo.BuildInfo.arch)
+					.mapError(e => FileIOError("Resource: arch.txt", "Unable to access resource file", Some(e)))
+				arch <- ZIO.fromEither(Arch.parse(archStr))
+					.mapError(msg => DomainError.IOError.FileIOError("architecture", s"Unable to parse architecture value: $msg", None))
+			yield
+				arch

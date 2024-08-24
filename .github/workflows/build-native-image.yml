@@ -28,7 +28,7 @@ jobs:
           java-version: '17'
           components: 'native-image'
       - name: Build and package
-        run: sbt packageCli
+        run: sbt "set arch := \"${{ matrix.arch }}\"; packageCli"
       - name: Rename artifact
         run: for f in *.zip; do mv $f $(printf '%s\n' "${f%.zip}-${{ matrix.arch }}.zip"); done
       - name: Upload artifact
